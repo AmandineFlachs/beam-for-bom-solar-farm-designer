@@ -200,6 +200,31 @@ def export(req: ExportRequest):
     return export_service.export_all(req.site_id, design)
 
 
+@app.post("/api/proposal")
+def proposal(req: ExportRequest):
+    design = store.get_design(req.site_id)
+    if not design:
+        raise HTTPException(404, "No design found — run /api/design first")
+    if not agent.beam_configured():
+        return {"markdown": export_service._proposal(design), "mode": "template"}
+    import json as _json
+    messages = [
+        {"role": "system", "content":
+         "You write the narrative sections of a solar-farm proposal. Every "
+         "number must come verbatim from the design JSON provided. Never "
+         "invent figures. Output markdown."},
+        {"role": "user", "content":
+         "Design JSON:\n" + _json.dumps(design, indent=2) +
+         "\n\nWrite the site rationale, constraint trade-offs, and warnings "
+         "explained as markdown narrative."},
+    ]
+    body = agent.beam_call(messages, surface="proposal")
+    content = body["choices"][0]["message"].get("content", "")
+    # echo reasoning_content on tool-less turn not required; done
+    return {"markdown": content or export_service._proposal(design),
+            "mode": "beam"}
+
+
 @app.get("/api/geocode")
 async def geocode(q: str):
     """Open-Meteo geocoding (free, no key)."""
