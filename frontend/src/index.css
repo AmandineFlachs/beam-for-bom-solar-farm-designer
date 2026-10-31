@@ -1,85 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
-:root {
-  color-scheme: dark;
+/* Financial design system — navy-black ground, opaque panels, orange accent,
+   pale-gold values, IBM Plex. */
+@theme {
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+  --color-ground: #07090e;
+  --color-ground-tint: #101522;
+  --color-panel: #10141c;
+  --color-accent: #ff951f;
+  --color-value: #edcd8c;
+  --color-ink: #f4f5f7;
+  --color-ink-muted: #c9ced8;
+  --color-line: #303139;
+  /* amber utilities map onto the accent ramp */
+  --color-amber-300: #edcd8c;
+  --color-amber-400: #ffb45e;
+  --color-amber-500: #ff951f;
+  --color-amber-600: #f0860c;
+  --color-amber-700: #cc6f0a;
+  --color-amber-800: #9c5410;
+  --radius-panel: 5px;
 }
+
+:root { color-scheme: dark; }
 
 html, body, #root {
   height: 100%;
   margin: 0;
-  background: #0a0c0e;
-  color: #d5dce4;
-  font-family: 'Inter', 'IBM Plex Sans', system-ui, sans-serif;
-}
-
-/* faint blueprint grid under everything — industrial drafting feel */
-body {
-  background-image:
-    linear-gradient(rgba(120,140,160,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(120,140,160,0.04) 1px, transparent 1px);
-  background-size: 48px 48px;
+  background: #07090e;
+  color: #f4f5f7;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
 }
 
 .cesium-viewer-bottom { display: none !important; }
 
-/* glass panels — gunmetal, sharp corners, hairline borders */
+/* opaque content panels — hairline borders, small radius */
 .panel {
-  background: rgba(15, 19, 23, 0.82);
-  backdrop-filter: blur(16px) saturate(1.15);
-  -webkit-backdrop-filter: blur(16px) saturate(1.15);
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 12px 36px rgba(0, 0, 0, 0.5);
+  background: #10141c;
+  border: 1px solid #303139;
+  border-radius: 5px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
 }
 
-/* map buttons — machined look */
+/* map controls — dark fill, outline, pill radius */
 .mapbtn {
-  background: rgba(15, 19, 23, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 4px;
-  transition: background 0.12s, border-color 0.12s;
+  background: #10141c;
+  border: 1px solid #303139;
+  border-radius: 20px;
+  transition: background 0.16s ease, border-color 0.16s ease;
 }
 .mapbtn:hover {
-  background: rgba(38, 47, 56, 0.9);
-  border-color: rgba(251, 191, 36, 0.35);
+  background: #141b26;
+  border-color: rgba(255, 149, 31, 0.45);
 }
 
-/* brand: hot metal → amber */
+/* brand — solid pale gold */
 .brand-text {
-  background: linear-gradient(100deg, #fde68a 0%, #fbbf24 40%, #d97706 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #edcd8c;
   letter-spacing: 0.04em;
 }
 
 .cta-glow {
-  box-shadow: 0 0 20px rgba(251, 191, 36, 0.28), 0 4px 14px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 20px rgba(255, 149, 31, 0.22), 0 4px 14px rgba(0, 0, 0, 0.45);
 }
 
 /* technical micro-labels */
 .tech-label {
   font-family: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  color: #64748b;
+  color: #c9ced8;
 }
 
 .metric-card {
-  background: rgba(24, 30, 36, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  border-radius: 4px;
+  background: #141a24;
+  border: 1px solid #303139;
+  border-radius: 5px;
   padding: 8px 10px;
 }
 .metric-card > div:last-child {
   font-family: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+  color: #edcd8c;
 }
 
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-thumb { background: #2c3947; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #303139; border-radius: 3px; }
 
 /* staged UI reveal */
 @keyframes fadeUp {
@@ -92,3 +100,7 @@ body {
 }
 .fade-up { animation: fadeUp 0.35s ease-out both; }
 .fade-in { animation: fadeIn 0.4s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up, .fade-in { animation: none; }
+}

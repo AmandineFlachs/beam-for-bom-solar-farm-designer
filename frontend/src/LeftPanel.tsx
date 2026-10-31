@@ -20,7 +20,7 @@ interface Props {
   onDemo: () => void
 }
 
-const input = 'w-full bg-[#0d1218] border border-[#2a3440] rounded px-2 py-1.5 text-sm font-mono'
+const input = 'w-full bg-[#10141c] border border-[#303139] rounded px-2 py-1.5 text-sm font-mono'
 const label = 'tech-label'
 
 export default function LeftPanel(p: Props) {
@@ -69,21 +69,21 @@ export default function LeftPanel(p: Props) {
         <div className={label}><span className="text-amber-500">01</span> — SITE</div>
         <div className="flex gap-2">
           <button onClick={() => p.setDrawMode(p.drawMode === 'boundary' ? 'none' : 'boundary')}
-            className={`flex-1 py-1.5 rounded text-sm ${p.drawMode === 'boundary' ? 'bg-amber-600/80' : 'bg-[#1a2432] hover:bg-[#223041]'}`}>
+            className={`flex-1 py-1.5 rounded text-sm ${p.drawMode === 'boundary' ? 'bg-amber-600/80' : 'bg-[#141a24] hover:bg-[#303139]'}`}>
             {p.drawMode === 'boundary' ? 'Click map…' : 'Draw boundary'}
           </button>
           <button onClick={() => p.setDrawMode(p.drawMode === 'exclusion' ? 'none' : 'exclusion')}
-            className={`flex-1 py-1.5 rounded text-sm ${p.drawMode === 'exclusion' ? 'bg-red-600' : 'bg-[#1a2432] hover:bg-[#223041]'}`}>
+            className={`flex-1 py-1.5 rounded text-sm ${p.drawMode === 'exclusion' ? 'bg-red-600' : 'bg-[#141a24] hover:bg-[#303139]'}`}>
             {p.drawMode === 'exclusion' ? 'Click map…' : 'Draw exclusion'}
           </button>
         </div>
         <div className="flex gap-2">
           <button onClick={p.onFinishBoundary}
-            className="flex-1 py-1 rounded text-xs bg-[#1a2432] hover:bg-[#223041]">
+            className="flex-1 py-1 rounded text-xs bg-[#141a24] hover:bg-[#303139]">
             Finish shape ({p.boundaryCount} pts)
           </button>
           <button onClick={p.onClearAll}
-            className="flex-1 py-1 rounded text-xs bg-[#1a2432] hover:bg-[#223041] text-red-300">
+            className="flex-1 py-1 rounded text-xs bg-[#141a24] hover:bg-[#303139] text-red-300">
             Clear all
           </button>
         </div>
@@ -96,7 +96,7 @@ export default function LeftPanel(p: Props) {
         )}
         {p.exclusionCount > 0 && (
           <button onClick={p.onRemoveLastExclusion}
-            className="py-1 rounded text-xs bg-[#1a2432] hover:bg-[#223041] text-slate-300">
+            className="py-1 rounded text-xs bg-[#141a24] hover:bg-[#303139] text-slate-300">
             Remove last exclusion ({p.exclusionCount} drawn)
           </button>
         )}
@@ -136,7 +136,7 @@ export default function LeftPanel(p: Props) {
       </button>
       </>)}
       <button onClick={p.onDemo}
-        className="py-1.5 rounded text-xs bg-[#1a2432] hover:bg-[#223041] text-slate-300">
+        className="py-1.5 rounded text-xs bg-[#141a24] hover:bg-[#303139] text-slate-300">
         Run demo scenario (Escrick Field, ~7 ha)
       </button>
       <p className="text-[10px] text-slate-500 leading-snug">

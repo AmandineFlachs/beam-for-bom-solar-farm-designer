@@ -28,7 +28,7 @@ export default function ReportView({ design, onClose }: { design: Design; onClos
   ))
 
   return (
-    <div className="w-full h-full overflow-y-auto bg-[#0b0f14] fade-in">
+    <div className="w-full h-full overflow-y-auto bg-[#07090e] fade-in">
       <div className="max-w-3xl mx-auto py-6 px-4">
         <div className="flex items-start justify-between mb-5">
           <div>
@@ -60,10 +60,10 @@ export default function ReportView({ design, onClose }: { design: Design; onClos
             <div className="h-44 mb-2">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthly}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#223041" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#303139" vertical={false} />
                   <XAxis dataKey="m" tick={{ fontSize: 10, fill: '#94a3b8' }} />
                   <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} width={52} />
-                  <Tooltip contentStyle={{ background: '#11161d', border: '1px solid #223041', fontSize: 12 }}
+                  <Tooltip contentStyle={{ background: '#11161d', border: '1px solid #303139', fontSize: 12 }}
                     formatter={(v: any) => [`${Number(v).toLocaleString()} kWh`, 'Generation']} />
                   <Bar dataKey="kwh" fill="#fbbf24" radius={[3, 3, 0, 0]} />
                 </BarChart>

@@ -15,7 +15,7 @@ class MapErrorBoundary extends Component<{ children: ReactNode }, { err: string 
   static getDerivedStateFromError(e: any) { return { err: e?.message ?? String(e) } }
   render() {
     if (this.state.err) return (
-      <div className="w-full h-full flex items-center justify-center bg-[#0b0f14]">
+      <div className="w-full h-full flex items-center justify-center bg-[#07090e]">
         <div className="panel p-4 max-w-md text-sm text-red-200">
           <div className="font-semibold mb-1">Map failed to render</div>
           {this.state.err}

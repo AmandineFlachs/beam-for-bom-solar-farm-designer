@@ -19,7 +19,7 @@ export default function StartScreen({ onPick, onDemo, busy }: Props) {
   }
 
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#0b0f14]/95 backdrop-blur-md fade-in">
+    <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#07090e]/95 backdrop-blur-md fade-in">
       <div className="panel p-8 w-[420px] text-center">
         <h1 className="text-4xl font-extrabold brand-text mb-2">BEAM for BOM: Solar Farm</h1>
         <p className="text-sm text-slate-300 mb-6">
@@ -28,7 +28,7 @@ export default function StartScreen({ onPick, onDemo, busy }: Props) {
 
         <div className="flex gap-1.5 mb-2">
           <input
-            className="flex-1 bg-[#0d141c] border border-[#223041] rounded-lg px-3 py-2 text-sm"
+            className="flex-1 bg-[#10141c] border border-[#303139] rounded-lg px-3 py-2 text-sm"
             value={q} placeholder="Search a place — e.g. York, UK"
             onChange={e => setQ(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && search()}

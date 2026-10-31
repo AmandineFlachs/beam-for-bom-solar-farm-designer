@@ -87,15 +87,15 @@ export default function RightPanel({ design, steps, siteId, onDesign, assumption
     <div className="flex flex-col h-full p-3 gap-3">
       {/* ============ BEAM CHAT — the headline feature ============ */}
       <div className="panel flex flex-col min-h-0 shrink-0" style={{ flexBasis: '44%' }}>
-        <div className="flex items-center justify-between px-2.5 pt-2 pb-1.5 border-b border-[#1e2733]">
+        <div className="flex items-center justify-between px-2.5 pt-2 pb-1.5 border-b border-[#262b33]">
           <span className="text-[12px] font-bold uppercase tracking-wider brand-text">⚡ ASK BEAM</span>
           {busy && <span className="text-[10px] text-yellow-400 animate-pulse">thinking…</span>}
         </div>
         <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 px-2 py-2">
           {chat.map((c, i) => (
-            <div key={i} className={`text-xs rounded-lg px-2.5 py-1.5 whitespace-pre-wrap max-w-[92%] ${c.who === 'beam' ? 'bg-[#151c26] text-slate-200' : 'bg-blue-700/50 text-blue-50 self-end'}`}>
+            <div key={i} className={`text-xs rounded-lg px-2.5 py-1.5 whitespace-pre-wrap max-w-[92%] ${c.who === 'beam' ? 'bg-[#141a24] text-slate-200' : 'bg-blue-700/50 text-blue-50 self-end'}`}>
               {c.reasoning && (
-                <details className="mb-1.5 border-b border-[#223041] pb-1">
+                <details className="mb-1.5 border-b border-[#303139] pb-1">
                   <summary className="cursor-pointer text-purple-300/80 text-[11px] select-none">
                     🧠 Beam's reasoning — click to expand
                   </summary>
@@ -106,14 +106,14 @@ export default function RightPanel({ design, steps, siteId, onDesign, assumption
               )}
               {c.text}
               {c.meta?.mode === 'live' && (
-                <div className="mt-1 pt-1 border-t border-[#223041] text-[10px] text-slate-500">
+                <div className="mt-1 pt-1 border-t border-[#303139] text-[10px] text-slate-500">
                   {c.meta.model} · effort {c.meta.effort} · {c.meta.latency_s}s
                   {c.meta.completion_tokens != null &&
                     ` · ${c.meta.completion_tokens} tok (${c.meta.reasoning_tokens ?? 0} reasoning)`}
                 </div>
               )}
               {c.meta?.mode === 'offline-scripted' && (
-                <div className="mt-1 pt-1 border-t border-[#223041] text-[10px] text-slate-500 italic">
+                <div className="mt-1 pt-1 border-t border-[#303139] text-[10px] text-slate-500 italic">
                   offline scripted mode — numbers still come from the real pipeline
                 </div>
               )}
@@ -122,14 +122,14 @@ export default function RightPanel({ design, steps, siteId, onDesign, assumption
           {busy && <div className="text-xs text-slate-500 px-1">Beam is working…</div>}
           <div ref={chatEnd} />
         </div>
-        <div className="flex gap-1 items-center p-2 border-t border-[#1e2733]">
-          <input className="flex-1 min-w-0 bg-[#0d141c] border border-[#223041] rounded-lg px-2.5 py-1.5 text-sm"
+        <div className="flex gap-1 items-center p-2 border-t border-[#262b33]">
+          <input className="flex-1 min-w-0 bg-[#10141c] border border-[#303139] rounded-lg px-2.5 py-1.5 text-sm"
             value={msg} onChange={e => setMsg(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && send()}
             placeholder='e.g. "Reduce land use by 20%"' />
           <select value={effort} onChange={e => setEffort(e.target.value)}
             title="Beam thinking depth"
-            className="shrink-0 w-[62px] bg-[#0d141c] border border-[#223041] rounded-lg px-1 py-1.5 text-[11px] text-slate-300">
+            className="shrink-0 w-[62px] bg-[#10141c] border border-[#303139] rounded-lg px-1 py-1.5 text-[11px] text-slate-300">
             <option value="low">low</option>
             <option value="medium">med</option>
             <option value="high">high</option>
@@ -201,14 +201,14 @@ export default function RightPanel({ design, steps, siteId, onDesign, assumption
                 }))}>
                   <XAxis dataKey="m" tick={{ fontSize: 10, fill: '#94a3b8' }} />
                   <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} width={45} />
-                  <Tooltip contentStyle={{ background: '#11161d', border: '1px solid #223041', fontSize: 12 }} />
+                  <Tooltip contentStyle={{ background: '#11161d', border: '1px solid #303139', fontSize: 12 }} />
                   <Bar dataKey="v" fill="#3b82f6" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
             {onReport && (
               <button onClick={onReport}
-                className="mt-1.5 w-full py-1.5 rounded text-xs bg-[#1a2432] hover:bg-[#223041] text-slate-300">
+                className="mt-1.5 w-full py-1.5 rounded text-xs bg-[#141a24] hover:bg-[#303139] text-slate-300">
                 📄 See full report
               </button>
             )}
@@ -243,7 +243,7 @@ export default function RightPanel({ design, steps, siteId, onDesign, assumption
               Export project package
             </button>
             <button onClick={doProposal} disabled={propBusy}
-              className="mt-1 w-full py-1.5 rounded text-xs bg-[#1a2432] hover:bg-[#223041] text-slate-300 disabled:opacity-50">
+              className="mt-1 w-full py-1.5 rounded text-xs bg-[#141a24] hover:bg-[#303139] text-slate-300 disabled:opacity-50">
               {propBusy ? 'Beam is writing…' : '⚡ Beam proposal (narrative)'}
             </button>
             {proposal && (
@@ -251,7 +251,7 @@ export default function RightPanel({ design, steps, siteId, onDesign, assumption
                 <div className="text-[10px] text-slate-500 italic mb-0.5">
                   {proposal.mode === 'beam' ? 'written by Beam — numbers from the design pipeline' : 'template fallback — Beam offline'}
                 </div>
-                <div className="max-h-64 overflow-y-auto text-xs text-slate-300 whitespace-pre-wrap bg-[#0d141c] rounded p-2">
+                <div className="max-h-64 overflow-y-auto text-xs text-slate-300 whitespace-pre-wrap bg-[#10141c] rounded p-2">
                   {proposal.markdown}
                 </div>
               </div>

@@ -1311,7 +1311,7 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
       <div className="absolute top-3 right-3 flex gap-2">
         {!locked && (
           <button onClick={onClose}
-            className="px-3 py-1.5 rounded text-xs bg-black/70 border border-[#2a3646] hover:bg-[#1a2432]">
+            className="px-3 py-1.5 rounded text-xs bg-black/70 border border-[#2a3646] hover:bg-[#141a24]">
             ✕ Close (Esc)
           </button>
         )}
