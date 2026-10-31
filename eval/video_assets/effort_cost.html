@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<!-- Effort vs cost — industrial bar chart. 1920x1080. -->
+<html><head><meta charset="utf-8"><style>
+  * { margin:0; box-sizing:border-box; }
+  body { width:1920px; height:1080px; background:#101418; color:#d7dde3;
+    font-family:'SF Mono','Menlo',monospace; display:flex;
+    flex-direction:column; align-items:center; justify-content:center;
+    background-image:
+      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size:80px 80px; }
+  .fig { font-size:20px; letter-spacing:.35em; color:#d97b29;
+    text-transform:uppercase; margin-bottom:18px; animation:fadein .6s both; }
+  .title { font-size:50px; font-weight:700; color:#eef2f5; margin-bottom:60px;
+    animation:fadein .6s .15s both; }
+  .title em { color:#d97b29; font-style:normal; }
+  .chart { display:flex; align-items:flex-end; gap:160px; height:460px;
+    border-bottom:1px solid #3a4550; padding:0 50px;
+    background-image:repeating-linear-gradient(0deg, transparent, transparent 91px, rgba(255,255,255,.05) 92px); }
+  .col { display:flex; flex-direction:column; align-items:center;
+    justify-content:flex-end; height:100%; }
+  .bars { display:flex; align-items:flex-end; gap:14px; }
+  .bar { width:78px; position:relative; animation:grow 1s cubic-bezier(.22,.9,.3,1) both;
+    transform-origin:bottom; }
+  .bar .v { position:absolute; top:-40px; left:0; right:0; text-align:center;
+    font-size:24px; font-weight:700; }
+  .correct { background:#2b3947; border-top:3px solid #5d6a76; }
+  .correct .v { color:#aab5bf; }
+  .tok { background:#4a2f14; border-top:3px solid #d97b29; }
+  .tok .v { color:#d97b29; }
+  .lbl { margin-top:16px; font-size:22px; color:#5d6a76; letter-spacing:.25em;
+    text-transform:uppercase; animation:fadein .6s both; }
+  .c1 .bar,.c1 .lbl { animation-delay:.4s } .c2 .bar,.c2 .lbl { animation-delay:.8s }
+  .c3 .bar,.c3 .lbl { animation-delay:1.2s }
+  .note { margin-top:50px; font-size:24px; color:#5d6a76;
+    animation:fadein .8s 1.8s both; }
+  .note b { color:#aab5bf; }
+  .legend { display:flex; gap:40px; margin-top:24px; font-size:18px;
+    color:#5d6a76; letter-spacing:.1em; animation:fadein .6s 1.4s both; }
+  .legend span::before { content:''; display:inline-block; width:14px;
+    height:14px; margin-right:10px; vertical-align:-1px; }
+  .legend .lc::before { background:#2b3947; border-top:3px solid #5d6a76; }
+  .legend .lt::before { background:#4a2f14; border-top:3px solid #d97b29; }
+  @keyframes grow { from { transform:scaleY(0) } to { transform:scaleY(1) } }
+  @keyframes fadein { from { opacity:0; transform:translateY(12px) } to { opacity:1 } }
+</style></head><body>
+  <div class="fig">FIG-02 · EFFORT VS OUTPUT TOKENS — 66 RUNS</div>
+  <div class="title">More effort, <em>same correctness.</em></div>
+  <div class="chart">
+    <div class="col c1"><div class="bars">
+      <div class="bar correct" style="height:400px"><div class="v">16/22</div></div>
+      <div class="bar tok" style="height:190px"><div class="v">602</div></div>
+    </div><div class="lbl">low</div></div>
+    <div class="col c2"><div class="bars">
+      <div class="bar correct" style="height:400px"><div class="v">16/22</div></div>
+      <div class="bar tok" style="height:290px"><div class="v">919</div></div>
+    </div><div class="lbl">medium</div></div>
+    <div class="col c3"><div class="bars">
+      <div class="bar correct" style="height:400px"><div class="v">15/22</div></div>
+      <div class="bar tok" style="height:400px"><div class="v">1,279</div></div>
+    </div><div class="lbl">high</div></div>
+  </div>
+  <div class="legend"><span class="lc">TASKS PASSED</span><span class="lt">AVG OUTPUT TOKENS</span></div>
+  <div class="note">Tool selection is <b>saturated at low effort</b>. High effort costs 2.1× the tokens.</div>
+</body></html>

@@ -20,3 +20,9 @@ exports/
 # eval artifacts
 backend/eval/ledger.jsonl
 backend/eval/results.csv
+
+# tooling + OS
+.DS_Store
+.agents/
+.devin/skills/
+skills-lock.json

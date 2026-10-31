@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!-- Agent loop diagram — engineering sheet. 1920x1080. -->
+<html><head><meta charset="utf-8"><style>
+  * { margin:0; box-sizing:border-box; }
+  body { width:1920px; height:1080px; background:#101418; color:#d7dde3;
+    font-family:'SF Mono','Menlo',monospace; padding:70px 100px;
+    display:flex; flex-direction:column; align-items:center;
+    background-image:
+      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size:80px 80px; }
+  .fig { font-size:20px; letter-spacing:.35em; color:#d97b29;
+    text-transform:uppercase; margin-bottom:16px; }
+  h1 { font-size:42px; font-weight:700; color:#eef2f5; margin-bottom:64px; }
+  h1 em { color:#d97b29; font-style:normal; }
+  .flow { display:flex; align-items:center; gap:28px; margin-bottom:56px; }
+  .node { border:1px solid #2a343e; padding:24px 30px; background:#0d141c;
+    text-align:center; min-width:270px; }
+  .node b { font-size:26px; display:block; margin-bottom:6px; }
+  .node span { font-size:18px; color:#8b97a3; line-height:1.4; display:block; }
+  .node.beam { border-left:3px solid #7c3aed; }
+  .node.beam b { color:#c4b5fd; }
+  .node.pipe { border-left:3px solid #2f6b45; }
+  .node.pipe b { color:#5cb87e; }
+  .arr { color:#d97b29; font-size:30px; }
+  .loop-note { font-size:19px; color:#5d6a76; margin-bottom:60px; }
+  .loop-note code { color:#d97b29; background:#1c232b; padding:2px 10px;
+    border:1px solid #2a343e; }
+  .rules { display:flex; gap:20px; }
+  .rule { border:1px solid #2a343e; border-top:2px solid #d97b29;
+    padding:18px 22px; background:#0d141c; font-size:19px; color:#aab5bf;
+    max-width:390px; }
+  .rule b { color:#d7dde3; display:block; margin-bottom:4px; font-size:19px; }
+</style></head><body>
+  <div class="fig">DWG-04 · AGENT LOOP</div>
+  <h1>The loop: <em>Beam reasons, services compute</em></h1>
+  <div class="flow">
+    <div class="node"><b>User</b><span>"reduce land use 20%"</span></div>
+    <div class="arr">→</div>
+    <div class="node beam"><b>Beam-1.0</b><span>reasons · picks tool + args<br>reasoning_content visible</span></div>
+    <div class="arr">→</div>
+    <div class="node pipe"><b>Deterministic tools</b><span>run_full_design · run_stage<br>compare · conditions · export</span></div>
+    <div class="arr">→</div>
+    <div class="node"><b>Reply</b><span>numbers from tool results only<br>+ tokens, latency, trace</span></div>
+  </div>
+  <div class="loop-note">Multi-turn contract: <code>reasoning_content</code> must be echoed verbatim on every assistant tool-call turn (HTTP 400 otherwise).</div>
+  <div class="rules">
+    <div class="rule"><b>Never invents a number</b>Every figure comes from a typed tool result, enforced by the system prompt.</div>
+    <div class="rule"><b>Every call logged</b>beam_call() writes surface, effort, tokens, tool args, latency to a JSONL ledger.</div>
+    <div class="rule"><b>Honest offline mode</b>No key? A scripted Beam narrates the same tool results, clearly labelled.</div>
+  </div>
+</body></html>

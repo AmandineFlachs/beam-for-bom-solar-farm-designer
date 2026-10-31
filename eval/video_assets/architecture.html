@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<!-- Architecture diagram — engineering sheet. 1920x1080. -->
+<html><head><meta charset="utf-8"><style>
+  * { margin:0; box-sizing:border-box; }
+  body { width:1920px; height:1080px; background:#101418; color:#d7dde3;
+    font-family:'SF Mono','Menlo',monospace; padding:64px 90px;
+    display:flex; flex-direction:column;
+    background-image:
+      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size:80px 80px; }
+  .fig { font-size:20px; letter-spacing:.35em; color:#d97b29;
+    text-transform:uppercase; margin-bottom:14px; }
+  h1 { font-size:42px; font-weight:700; color:#eef2f5; margin-bottom:6px; }
+  h1 em { color:#d97b29; font-style:normal; }
+  .sub { font-size:20px; color:#5d6a76; margin-bottom:44px; }
+  .cols { display:flex; gap:36px; flex:1; }
+  .col { flex:1; display:flex; flex-direction:column; gap:14px; }
+  .colhead { font-size:16px; letter-spacing:.25em; text-transform:uppercase;
+    color:#5d6a76; margin-bottom:4px; border-bottom:1px solid #2a343e;
+    padding-bottom:10px; }
+  .box { border:1px solid #2a343e; padding:20px 24px; background:#0d141c; }
+  .box b { font-size:24px; display:block; margin-bottom:6px; color:#d7dde3; }
+  .box span { font-size:18px; color:#8b97a3; line-height:1.45; }
+  .box.accent { border-left:3px solid #d97b29; }
+  .box.beam { border-left:3px solid #7c3aed; }
+  .box.beam b { color:#c4b5fd; }
+  .conn { display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:8px; width:56px; color:#d97b29; font-size:28px; }
+  .conn small { font-size:13px; color:#475569; letter-spacing:.2em;
+    writing-mode:vertical-rl; }
+</style></head><body>
+  <div class="fig">DWG-02 · SYSTEM ARCHITECTURE</div>
+  <h1>BEAM for BOM — <em>architecture</em></h1>
+  <div class="sub">Two renderers, one data source. Deterministic pipeline, reasoning agent.</div>
+  <div class="cols">
+    <div class="col">
+      <div class="colhead">Frontend · React + TS</div>
+      <div class="box accent"><b>MapView — Cesium</b>
+        <span>Working map. Flat ellipsoid; every entity at height 0.
+        Draw boundary + exclusions; results layers.</span></div>
+      <div class="box"><b>Scene3D — Three.js</b>
+        <span>Cinematic overlay. Real heightfield (Mapterhorn DEM), draped
+        Esri imagery, graded pads, walkable.</span></div>
+      <div class="box"><b>Panels</b>
+        <span>Assumptions, step tracker, BOM, chat with reasoning trace +
+        per-reply token meta.</span></div>
+    </div>
+    <div class="conn">⟷<small>REST</small></div>
+    <div class="col">
+      <div class="colhead">Backend · FastAPI + SQLite</div>
+      <div class="box"><b>Design pipeline</b>
+        <span>terrain (elevation + OSM constraints) → layout → electrical →
+        yield (PVGIS) → BOM → export</span></div>
+      <div class="box beam"><b>Agent layer — Beam-1.0</b>
+        <span>Tools: run_full_design, run_stage, compare_scenarios,
+        conditions, summary, export. reasoning_content echoed per turn.</span></div>
+      <div class="box"><b>beam_call() → ledger.jsonl</b>
+        <span>Every LLM call logged: surface, effort, tokens, tool args,
+        latency. Scripted fallback if unconfigured.</span></div>
+    </div>
+    <div class="conn">⟷<small>OPENAI-COMPAT</small></div>
+    <div class="col">
+      <div class="colhead">External</div>
+      <div class="box beam"><b>Beam-1.0-501B-A23B</b>
+        <span>api.reflection.ai · reasoning_effort low→max</span></div>
+      <div class="box"><b>Open data</b>
+        <span>Esri imagery · Open-Meteo elevation/weather · PVGIS ·
+        OpenStreetMap (Overpass) · Mapterhorn DEM</span></div>
+    </div>
+  </div>
+</body></html>

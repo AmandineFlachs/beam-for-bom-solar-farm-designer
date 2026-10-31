@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<!-- Scoping diagram — expected vs actual stages. 1920x1080. -->
+<html><head><meta charset="utf-8"><style>
+  * { margin:0; box-sizing:border-box; }
+  body { width:1920px; height:1080px; background:#101418; color:#d7dde3;
+    font-family:'SF Mono','Menlo',monospace; display:flex;
+    flex-direction:column; justify-content:center; padding:0 140px;
+    background-image:
+      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size:80px 80px; }
+  .fig { font-size:20px; letter-spacing:.35em; color:#d97b29;
+    text-transform:uppercase; margin-bottom:16px; animation:fadein .6s both; }
+  .req { font-size:44px; font-weight:700; color:#eef2f5; margin-bottom:64px;
+    animation:fadein .6s .15s both; }
+  .req code { color:#d97b29; background:#1c232b; padding:4px 16px;
+    border:1px solid #2a343e; font-size:36px; }
+  .rows { display:flex; flex-direction:column; gap:56px; }
+  .row { display:flex; align-items:center; gap:36px; }
+  .tag { width:270px; text-align:right; font-size:19px; color:#5d6a76;
+    text-transform:uppercase; letter-spacing:.15em; line-height:1.5; }
+  .stages { display:flex; align-items:center; gap:12px; }
+  .stage { padding:16px 26px; font-size:24px; border:1px solid #2a343e;
+    background:#0d141c; color:#3d4854; animation:fadein .5s both; }
+  .stage.ok { border-color:#2f6b45; background:#0d1a12; color:#5cb87e; }
+  .stage.skip { border-style:dashed; }
+  .stage.over { border-color:#8a3226; background:#1e0f0c; color:#e06a52;
+    border-width:2px; animation:pulse 1.1s 1.8s ease-in-out infinite alternate; }
+  .arrow { color:#3a4550; font-size:20px; }
+  .should .stage:nth-child(1){animation-delay:.4s}.should .stage:nth-child(3){animation-delay:.55s}
+  .should .stage:nth-child(5){animation-delay:.7s}.should .stage:nth-child(7){animation-delay:.85s}
+  .should .stage:nth-child(9){animation-delay:1s}
+  .did .stage { animation-delay:1.4s }
+  .verdict { margin-top:60px; font-size:27px; color:#e06a52;
+    animation:fadein .8s 2.1s both; }
+  .verdict b { color:#d7dde3; }
+  @keyframes fadein { from { opacity:0; transform:translateY(12px) } to { opacity:1 } }
+  @keyframes pulse { from { box-shadow:0 0 0 0 rgba(224,106,82,.4) }
+                     to { box-shadow:0 0 18px 2px rgba(224,106,82,.3) } }
+</style></head><body>
+  <div class="fig">FIG-03 · SCOPING — OBSERVED BEHAVIOUR</div>
+  <div class="req">Request: <code>"change tilt to 25°"</code></div>
+  <div class="rows">
+    <div class="row should">
+      <div class="tag">stages that<br>should run</div>
+      <div class="stages">
+        <div class="stage skip">terrain</div><span class="arrow">→</span>
+        <div class="stage ok">layout</div><span class="arrow">→</span>
+        <div class="stage skip">electrical</div><span class="arrow">→</span>
+        <div class="stage ok">yield</div><span class="arrow">→</span>
+        <div class="stage ok">bom</div>
+      </div>
+    </div>
+    <div class="row did">
+      <div class="tag">stages beam ran<br>12/12 times</div>
+      <div class="stages">
+        <div class="stage skip">terrain</div><span class="arrow">→</span>
+        <div class="stage ok">layout</div><span class="arrow">→</span>
+        <div class="stage over">electrical</div><span class="arrow">→</span>
+        <div class="stage ok">yield</div><span class="arrow">→</span>
+        <div class="stage ok">bom</div>
+      </div>
+    </div>
+  </div>
+  <div class="verdict">Correct tool (<b>run_stage</b>), wrong <b>scope</b>. Every effort level.</div>
+</body></html>

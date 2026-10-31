@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<!-- Title card — engineering sheet style. 1920x1080. -->
+<html><head><meta charset="utf-8"><style>
+  * { margin:0; box-sizing:border-box; }
+  body { width:1920px; height:1080px; background:#101418; color:#d7dde3;
+    font-family:'SF Mono','Menlo',monospace; display:flex;
+    flex-direction:column; justify-content:center; padding:0 140px;
+    background-image:
+      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size:80px 80px; position:relative; }
+  body::before, body::after, .tick::before, .tick::after {
+    content:''; position:absolute; width:26px; height:26px;
+    border:1px solid #3a4550; }
+  body::before { top:40px; left:40px; border-right:none; border-bottom:none; }
+  body::after { top:40px; right:40px; border-left:none; border-bottom:none; }
+  .tick::before { bottom:40px; left:40px; border-right:none; border-top:none; }
+  .tick::after { bottom:40px; right:40px; border-left:none; border-top:none; }
+  .tick { position:absolute; inset:0; pointer-events:none; }
+  .fig { font-size:20px; letter-spacing:.35em; color:#d97b29;
+    text-transform:uppercase; margin-bottom:36px; }
+  .rule { width:140px; height:1px; background:#3a4550; margin-bottom:36px; }
+  h1 { font-size:120px; font-weight:700; letter-spacing:-.01em;
+    color:#eef2f5; }
+  h1 span { color:#d97b29; }
+  .sub { font-size:34px; color:#8b97a3; margin-top:34px; max-width:1200px;
+    line-height:1.5; }
+  .sub b { color:#d7dde3; font-weight:600; }
+  .tags { display:flex; gap:0; margin-top:64px; border:1px solid #2a343e;
+    width:fit-content; }
+  .tags span { font-size:20px; padding:14px 30px; color:#8b97a3;
+    border-right:1px solid #2a343e; letter-spacing:.2em; }
+  .tags span:last-child { border-right:none; color:#d97b29; }
+  .meta { position:absolute; bottom:52px; left:140px; font-size:16px;
+    color:#3a4550; letter-spacing:.2em; }
+</style></head><body>
+  <div class="tick"></div>
+  <div class="fig">DWG-01 · BUILD WITH BEAM</div>
+  <div class="rule"></div>
+  <h1>BEAM <span>for</span> BOM</h1>
+  <div class="sub">Draw a boundary. <b>Beam designs the solar farm</b>
+  and tells you what to buy.</div>
+  <div class="tags"><span>BOUNDARY</span><span>ENERGY</span><span>ARRAY</span><span>MATERIALS</span></div>
+  <div class="meta">SCALE 1:1 · SHEET 1 OF 3 · REV A</div>
+</body></html>
