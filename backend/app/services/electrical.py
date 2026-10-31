@@ -98,9 +98,11 @@ def design_electrical(
     # the array — where UK DNO package substations actually sit; guarantees it
     # never overlaps a PV table on a packed site ----
     arr_c = tables_m.centroid if tables_m is not None else boundary_m.centroid
-    ring = boundary_m.exterior
-    edge = min((ring.interpolate(d) for d in _linspace(0, ring.length, 300)),
-               key=lambda p: p.distance(arr_c))
+    parts = boundary_m.geoms if boundary_m.geom_type == "MultiPolygon" else [boundary_m]
+    cands = [p for part in parts
+             for p in (part.exterior.interpolate(d)
+                       for d in _linspace(0, part.exterior.length, 300))]
+    edge = min(cands, key=lambda p: p.distance(arr_c))
     dx, dy = arr_c.x - edge.x, arr_c.y - edge.y   # inward direction
     dl = math.hypot(dx, dy) or 1.0
     tx_x, tx_y = edge.x - dx / dl * 3.0, edge.y - dy / dl * 3.0

@@ -1,6 +1,15 @@
 export type GeoPolygon = { type: 'Polygon'; coordinates: number[][][] } | { type: 'MultiPolygon'; coordinates: number[][][][] }
 export interface Exclusion { id: string; label: string; geometry: GeoPolygon }
 
+/** Outer rings of a boundary, unclosed: Polygon → [ring],
+ * MultiPolygon → one ring per parcel. */
+export function outerRings(g: GeoPolygon): number[][][] {
+  const rings = g.type === 'MultiPolygon'
+    ? g.coordinates.map(p => p[0])
+    : [g.coordinates[0]]
+  return rings.map(r => r.slice(0, -1))
+}
+
 export interface DesignAssumptions {
   module: { wattage: number; voc: number; length_m: number; width_m: number }
   array: {

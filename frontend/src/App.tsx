@@ -6,7 +6,7 @@ import ReportView from './ReportView'
 import StartScreen from './StartScreen'
 import LeftPanel from './LeftPanel'
 import RightPanel from './RightPanel'
-import { api, defaultAssumptions, type Design, type DesignAssumptions, type Exclusion, type Step } from './api'
+import { api, defaultAssumptions, outerRings, type Design, type DesignAssumptions, type Exclusion, type GeoPolygon, type Step } from './api'
 
 /** Error boundary: a crash inside the map shows a message instead of a
  * black page (React unmounts the whole tree on uncaught render errors). */
@@ -30,6 +30,7 @@ export default function App() {
   const viewerRef = useRef<Cesium.Viewer | null>(null)
   const [drawMode, setDrawMode] = useState<DrawMode>('none')
   const [boundary, setBoundary] = useState<number[][]>([])
+  const [parcels, setParcels] = useState<number[][][]>([])  // finished boundary rings
   const [exclusions, setExclusions] = useState<Exclusion[]>([])
   const [pendingEx, setPendingEx] = useState<number[][]>([])
   const [siteId, setSiteId] = useState<string | null>(null)
@@ -53,6 +54,10 @@ export default function App() {
   const onPick = useCallback((i: PickedInfo | null) => setPicked(i), [])
 
   const finishShape = () => {
+    if (drawMode === 'boundary' && boundary.length >= 3) {
+      setParcels(p => [...p, boundary])
+      setBoundary([])
+    }
     if (drawMode === 'exclusion' && pendingEx.length >= 3) {
       setExclusions(exs => [...exs, {
         id: `exclusion_${exs.length + 1}`, label: 'Exclusion',
@@ -64,7 +69,7 @@ export default function App() {
   }
 
   const clearAll = () => {
-    setBoundary([]); setExclusions([]); setPendingEx([])
+    setBoundary([]); setParcels([]); setExclusions([]); setPendingEx([])
     setDesign(null); setSteps([]); setSiteId(null); setDrawMode('none')
     setError(null); setPicked(null)
   }
@@ -80,20 +85,26 @@ export default function App() {
     return d
   }
 
+  const allRings = (b: number[][] = boundary, p: number[][][] = parcels) =>
+    [...p, ...(b.length >= 3 ? [b] : [])]
+
   const generate = async (b: number[][] = boundary, exs: Exclusion[] = exclusions,
     a: DesignAssumptions = assumptions) => {
-    if (b.length < 3) { setError('Draw a boundary with at least 3 points.'); return }
+    const rings = allRings(b)
+    if (!rings.length) { setError('Draw a boundary with at least 3 points.'); return }
     setGenerating(true); setError(null); setDesign(null); setPicked(null)
     setSteps([{ step: 'boundary', status: 'active', summary: 'Uploading site…' }])
     try {
-      const poly = { type: 'Polygon' as const, coordinates: [[...b, b[0]]] }
+      const poly: GeoPolygon = rings.length === 1
+        ? { type: 'Polygon', coordinates: [[...rings[0], rings[0][0]]] }
+        : { type: 'MultiPolygon', coordinates: rings.map(r => [[...r, r[0]]]) }
       const { site_id } = await api.createSite('Hackathon Field', poly, exs)
       setSiteId(site_id)
       const d = await runDesign(site_id, a)
       // auto-dive into 3D once the layout is computed
       if (d?.site?.centroid) {
         setView3d(true); setSunHour(9.5)
-        frameSite3d(viewerRef.current, d.site.boundary.coordinates[0])
+        frameSite3d(viewerRef.current, outerRings(d.site.boundary).flat())
       }
     } catch (e: any) {
       setError(e.message)
@@ -108,8 +119,9 @@ export default function App() {
     try {
       const { site_id } = await api.demo()
       const site = await fetch(`/api/site/${site_id}`).then(r => r.json())
-      const ring = site.boundary.coordinates[0].slice(0, -1)
-      setBoundary(ring); setExclusions(site.exclusions); setPendingEx([])
+      const rings = outerRings(site.boundary)
+      setBoundary(rings[0]); setParcels(rings.slice(1))
+      setExclusions(site.exclusions); setPendingEx([])
       setSiteId(site_id)
       flyTo(viewerRef.current, site.centroid.lon, site.centroid.lat, 2500)
       // demo on a ~7 ha field: 1.2 MWp only fills a corner — size to the site
@@ -117,7 +129,7 @@ export default function App() {
       const d = await runDesign(site_id, demoA)
       if (d?.site?.centroid) {
         setView3d(true); setSunHour(9.5)
-        frameSite3d(viewerRef.current, d.site.boundary.coordinates[0])
+        frameSite3d(viewerRef.current, outerRings(d.site.boundary).flat())
       }
     } catch (e: any) {
       setError(e.message)
@@ -161,7 +173,7 @@ export default function App() {
           hidden while the report occupies the main pane */}
       <div className="absolute inset-0" style={{ display: report ? 'none' : 'block' }}>
         <MapErrorBoundary>
-          <MapView drawMode={drawMode} boundary={boundary} exclusions={pendingExclusions}
+          <MapView drawMode={drawMode} boundary={boundary} parcels={parcels} exclusions={pendingExclusions}
             design={design} view3d={view3d} tiltDeg={assumptions.array.tilt_degrees}
             sunHour={sunHour}
             onBoundaryPoint={onBoundaryPoint} onExclusionPoint={onExclusionPoint}
@@ -193,12 +205,13 @@ export default function App() {
           onFlyTo={(lon, lat) => flyTo(viewerRef.current, lon, lat, 20000)}
           drawMode={drawMode} setDrawMode={setDrawMode}
           boundaryCount={drawMode === 'exclusion' ? pendingEx.length : boundary.length}
+          parcelCount={parcels.length}
           onFinishBoundary={finishShape} onClearAll={clearAll}
           onRemoveLastExclusion={() => setExclusions(e => e.slice(0, -1))}
           exclusionCount={exclusions.length}
           assumptions={assumptions} setAssumptions={setAssumptions}
           onGenerate={() => generate()} generating={generating}
-          canGenerate={boundary.length >= 3}
+          canGenerate={allRings().length > 0}
           onDemo={runDemo}
         />
         </div>

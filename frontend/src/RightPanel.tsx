@@ -32,6 +32,8 @@ export default function RightPanel({ design, steps, siteId, onDesign, assumption
   ])
   const [busy, setBusy] = useState(false)
   const [exports_, setExports] = useState<Record<string, string> | null>(null)
+  const [proposal, setProposal] = useState<{ markdown: string; mode?: string } | null>(null)
+  const [propBusy, setPropBusy] = useState(false)
   const [conds, setConds] = useState<{
     source: string; ghi_wm2?: number; dni_wm2?: number; temperature_c?: number
     cloud_cover_pct?: number; wind_ms?: number; is_day?: boolean; fetched_at?: string
@@ -69,6 +71,13 @@ export default function RightPanel({ design, steps, siteId, onDesign, assumption
   const doExport = async () => {
     if (!siteId) return
     try { setExports(await api.export(siteId)) } catch { }
+  }
+
+  const doProposal = async () => {
+    if (!siteId) return
+    setPropBusy(true)
+    try { setProposal(await api.getProposal(siteId)) } catch { }
+    setPropBusy(false)
   }
 
   const t = design?.terrain, l = design?.layout, e = design?.electrical,
@@ -233,6 +242,20 @@ export default function RightPanel({ design, steps, siteId, onDesign, assumption
             <button onClick={doExport} className="w-full py-1.5 rounded-lg text-sm bg-amber-700/70 hover:bg-amber-600">
               Export project package
             </button>
+            <button onClick={doProposal} disabled={propBusy}
+              className="mt-1 w-full py-1.5 rounded text-xs bg-[#1a2432] hover:bg-[#223041] text-slate-300 disabled:opacity-50">
+              {propBusy ? 'Beam is writing…' : '⚡ Beam proposal (narrative)'}
+            </button>
+            {proposal && (
+              <div className="mt-1.5">
+                <div className="text-[10px] text-slate-500 italic mb-0.5">
+                  {proposal.mode === 'beam' ? 'written by Beam — numbers from the design pipeline' : 'template fallback — Beam offline'}
+                </div>
+                <div className="max-h-64 overflow-y-auto text-xs text-slate-300 whitespace-pre-wrap bg-[#0d141c] rounded p-2">
+                  {proposal.markdown}
+                </div>
+              </div>
+            )}
             {exports_ && (
               <div className="mt-1 flex flex-col gap-0.5">
                 {Object.entries(exports_).map(([k, v]) => (

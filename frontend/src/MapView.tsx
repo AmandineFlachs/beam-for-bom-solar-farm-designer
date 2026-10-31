@@ -12,6 +12,7 @@ export interface PickedInfo {
 interface Props {
   drawMode: DrawMode
   boundary: number[][]
+  parcels?: number[][][]   // additional finished boundary rings (multi-parcel sites)
   exclusions: Exclusion[]
   design: Design | null
   view3d: boolean
@@ -86,7 +87,7 @@ function treeCanvas(): HTMLCanvasElement {
 }
 let _treeTex: HTMLCanvasElement | null = null
 
-export default function MapView({ drawMode, boundary, exclusions, design, view3d, tiltDeg, sunHour,
+export default function MapView({ drawMode, boundary, parcels = [], exclusions, design, view3d, tiltDeg, sunHour,
   onBoundaryPoint, onExclusionPoint, onPick, viewerRef }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const drawSource = useRef<Cesium.CustomDataSource | null>(null)
@@ -261,8 +262,12 @@ export default function MapView({ drawMode, boundary, exclusions, design, view3d
     if (!ds) return
     let cancelled = false
     ;(async () => {
-      const rings = [
+      const bndRings = [
+        ...parcels.map(p => [...p, p[0]]),
         ...(boundary.length >= 3 ? [[...boundary, boundary[0]]] : []),
+      ]
+      const rings = [
+        ...bndRings,
         ...exclusions.map(ex => [...(ex.geometry as any).coordinates[0], (ex.geometry as any).coordinates[0][0]]),
       ]
       const allPos = rings.flatMap(r => r.map(([lon, lat]) => ({ lon, lat })))
@@ -279,8 +284,8 @@ export default function MapView({ drawMode, boundary, exclusions, design, view3d
       const elevated = (ring: number[][]) =>
         Cesium.Cartesian3.fromDegreesArrayHeights(
           ring.flatMap(([lo, la], i) => [lo, la, hh(ring.length)[i]]))
-      if (boundary.length >= 3) {
-        const positions = elevated([...boundary, boundary[0]])
+      for (const ring of bndRings) {
+        const positions = elevated(ring)
         ds.entities.add({
           polygon: {
             hierarchy: new Cesium.PolygonHierarchy(positions.slice(0, -1)),
@@ -315,7 +320,7 @@ export default function MapView({ drawMode, boundary, exclusions, design, view3d
       })
     })()
     return () => { cancelled = true }
-  }, [boundary, exclusions, view3d, terrainReady])
+  }, [boundary, parcels, exclusions, view3d, terrainReady])
 
   // ---- render design results (async: samples terrain heights) ----
   useEffect(() => {
@@ -537,18 +542,20 @@ export default function MapView({ drawMode, boundary, exclusions, design, view3d
       })
 
       // 4b. perimeter fence (3D): posts + top rail along the boundary
-      if (view3d && boundary.length >= 3) {
-        const ring = [...boundary, boundary[0]]
-        const fh = await sampleGround(ring.map(([lon, lat]) => ({ lon, lat })))
-        if (cancelled) return
-        ds.entities.add({
-          wall: {
-            positions: Cesium.Cartesian3.fromDegreesArray(ring.flat()),
-            minimumHeights: fh,
-            maximumHeights: fh.map((h: number) => h + 1.6),
-            material: Cesium.Color.fromCssColorString('#2f3b45').withAlpha(0.75),
-          } as any,
-        })
+      if (view3d) {
+        for (const bnd of [...parcels, ...(boundary.length >= 3 ? [boundary] : [])]) {
+          const ring = [...bnd, bnd[0]]
+          const fh = await sampleGround(ring.map(([lon, lat]) => ({ lon, lat })))
+          if (cancelled) return
+          ds.entities.add({
+            wall: {
+              positions: Cesium.Cartesian3.fromDegreesArray(ring.flat()),
+              minimumHeights: fh,
+              maximumHeights: fh.map((h: number) => h + 1.6),
+              material: Cesium.Color.fromCssColorString('#2f3b45').withAlpha(0.75),
+            } as any,
+          })
+        }
       }
 
       // 5. cable routes, inverters, transformer

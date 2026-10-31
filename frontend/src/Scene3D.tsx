@@ -9,6 +9,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import type { Design } from './api'
+import { outerRings } from './api'
 
 interface Props {
   design: Design
@@ -62,14 +63,14 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
   const [dem, setDem] = useState<any>(undefined)
   useEffect(() => {
     const site = design.site
-    if (!site?.boundary?.coordinates?.[0]?.length) { setDem({ fail: true }); return }
+    if (!site?.boundary || !outerRings(site.boundary).length) { setDem({ fail: true }); return }
     let dead = false
     const guard = setTimeout(() => { if (!dead) setDem((d: any) => d === undefined ? { fail: true } : d) }, 6000)
     ;(async () => {
       try {
         const c0 = site.centroid
         const cosLat = Math.cos(c0.lat * Math.PI / 180)
-        const ring = site.boundary.coordinates[0] as [number, number][]
+        const ring = outerRings(site.boundary).flat() as [number, number][]
         const Z = 15, T = 256, N = 2 ** Z
         const wX = (lon: number) => (lon + 180) / 360 * N * T
         const wY = (lat: number) => {
@@ -151,9 +152,9 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
     renderer.toneMappingExposure = 0.82
     mount.appendChild(renderer.domElement)
 
-    const bndLL = site.boundary.coordinates[0] as [number, number][]
-    const bnd = bndLL.map(([lo, la]) => toXY(lo, la))
-    const xs = bnd.map(p => p[0]), zs = bnd.map(p => p[1])
+    const bnds = outerRings(site.boundary).map(r =>
+      (r as [number, number][]).map(([lo, la]) => toXY(lo, la)))
+    const xs = bnds.flat().map(p => p[0]), zs = bnds.flat().map(p => p[1])
     const pad = 160
     const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad
     const minZ = Math.min(...zs) - pad, maxZ = Math.max(...zs) + pad
@@ -601,13 +602,15 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
     // ---- boundary fence ----
     const fenceMat = new THREE.MeshStandardMaterial({ color: 0x4a4d50, roughness: 0.6, metalness: 0.5 })
     const postGeo = new THREE.BoxGeometry(0.09, 1.7, 0.09)
-    const posts = new THREE.InstancedMesh(postGeo, fenceMat, 220)
+    const MAX_POSTS = 220 * bnds.length
+    const posts = new THREE.InstancedMesh(postGeo, fenceMat, MAX_POSTS)
     let pi = 0
     const dummy = new THREE.Object3D()
-    for (let i = 0; i < bnd.length - 1 && pi < 220; i++) {
+    for (const bnd of bnds)
+    for (let i = 0; i < bnd.length - 1 && pi < MAX_POSTS; i++) {
       const [x1, z1] = bnd[i], [x2, z2] = bnd[i + 1]
       const len = Math.hypot(x2 - x1, z2 - z1), n = Math.max(1, Math.round(len / 8))
-      for (let k = 0; k <= n && pi < 220; k++, pi++) {
+      for (let k = 0; k <= n && pi < MAX_POSTS; k++, pi++) {
         const fx = x1 + (x2 - x1) * k / n, fz = z1 + (z2 - z1) * k / n
         dummy.position.set(fx, elevAt(fx, fz) - baseElev + 0.85, fz)
         dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1)
@@ -625,9 +628,11 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
     posts.castShadow = true
     scene.add(posts)
     // glowing boundary ring (digital-twin accent)
-    const ring = new THREE.BufferGeometry().setFromPoints(
-      bnd.map(([x, z]) => new THREE.Vector3(x, elevAt(x, z) - baseElev + 0.15, z)))
-    scene.add(new THREE.Line(ring, new THREE.LineBasicMaterial({ color: 0xd9822b })))
+    for (const bnd of bnds) {
+      const ring = new THREE.BufferGeometry().setFromPoints(
+        bnd.map(([x, z]) => new THREE.Vector3(x, elevAt(x, z) - baseElev + 0.15, z)))
+      scene.add(new THREE.Line(ring, new THREE.LineBasicMaterial({ color: 0xd9822b })))
+    }
     } catch (e) { console.warn('fence', e) }
 
     // ---- painted zone labels flat on the ground ----
@@ -1117,13 +1122,13 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
     try {
     // ---- grass: instanced crossed-quad tufts inside the boundary ----
     // (near-field detail layer à la explore-grand-teton's GroundCover)
-    const inBnd = (x: number, z: number) => {
+    const inBnd = (x: number, z: number) => bnds.some(bnd => {
       let inside = false
       for (let i = 0, j = bnd.length - 1; i < bnd.length; j = i++)
         if ((bnd[i][1] > z) !== (bnd[j][1] > z) &&
             x < (bnd[j][0] - bnd[i][0]) * (z - bnd[i][1]) / (bnd[j][1] - bnd[i][1]) + bnd[i][0]) inside = !inside
       return inside
-    }
+    })
     // two crossed quads per tuft
     const quad = new THREE.PlaneGeometry(1, 1)
     quad.translate(0, 0.5, 0)

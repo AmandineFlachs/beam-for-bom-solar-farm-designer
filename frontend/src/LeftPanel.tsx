@@ -7,6 +7,7 @@ interface Props {
   drawMode: string
   setDrawMode: (m: any) => void
   boundaryCount: number
+  parcelCount?: number
   onFinishBoundary: () => void
   onClearAll: () => void
   onRemoveLastExclusion: () => void
@@ -86,6 +87,13 @@ export default function LeftPanel(p: Props) {
             Clear all
           </button>
         </div>
+        {(p.parcelCount ?? 0) > 0 && (
+          <div className="text-[11px] text-cyan-300">
+            {p.parcelCount} parcel{(p.parcelCount ?? 0) > 1 ? 's' : ''} drawn
+            {p.boundaryCount >= 3 ? ' (+1 in progress)' : ''} — draw another to
+            make a multi-parcel site
+          </div>
+        )}
         {p.exclusionCount > 0 && (
           <button onClick={p.onRemoveLastExclusion}
             className="py-1 rounded text-xs bg-[#1a2432] hover:bg-[#223041] text-slate-300">
