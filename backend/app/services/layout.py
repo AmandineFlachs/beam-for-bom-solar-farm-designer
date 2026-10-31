@@ -99,7 +99,11 @@ def generate_layout(
     modules_per_table = arr.modules_per_table_row * arr.module_rows_per_table
     table_kwp = modules_per_table * mod.wattage / 1000.0
     land_factor = max(0.2, min(assumptions.target.land_use_factor, 1.0))
-    row_pitch = arr.row_pitch_m * land_factor
+    # projected fixed-tilt footprint: row pitch must clear the projected
+    # shadow of the tilted table at the design tilt angle.
+    tilt = max(getattr(arr, "tilt_degrees", 20.0) or 20.0, 1.0)
+    projected_pitch = table_d / math.tan(math.radians(tilt)) + 0.5
+    row_pitch = max(arr.row_pitch_m * land_factor, projected_pitch)
 
     # rotate buildable so that "azimuth" direction becomes +y in rotated frame
     # azimuth 180 (south): rotate by 180 - azimuth = 0 => rows run east-west
