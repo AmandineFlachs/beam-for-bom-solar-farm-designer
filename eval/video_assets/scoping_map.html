@@ -1,44 +1,47 @@
 <!DOCTYPE html>
-<!-- Scoping diagram — expected vs actual stages. 1920x1080. -->
-<html><head><meta charset="utf-8"><style>
+<!-- Scoping diagram — Financial design system. 1920x1080. -->
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
   * { margin:0; box-sizing:border-box; }
-  body { width:1920px; height:1080px; background:#101418; color:#d7dde3;
-    font-family:'SF Mono','Menlo',monospace; display:flex;
-    flex-direction:column; justify-content:center; padding:0 140px;
-    background-image:
-      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-    background-size:80px 80px; }
-  .fig { font-size:20px; letter-spacing:.35em; color:#d97b29;
-    text-transform:uppercase; margin-bottom:16px; animation:fadein .6s both; }
-  .req { font-size:44px; font-weight:700; color:#eef2f5; margin-bottom:64px;
-    animation:fadein .6s .15s both; }
-  .req code { color:#d97b29; background:#1c232b; padding:4px 16px;
-    border:1px solid #2a343e; font-size:36px; }
-  .rows { display:flex; flex-direction:column; gap:56px; }
-  .row { display:flex; align-items:center; gap:36px; }
-  .tag { width:270px; text-align:right; font-size:19px; color:#5d6a76;
-    text-transform:uppercase; letter-spacing:.15em; line-height:1.5; }
+  body { width:1920px; height:1080px; background:#07090e; color:#f4f5f7;
+    font-family:'IBM Plex Sans',sans-serif; display:flex; flex-direction:column;
+    justify-content:center; padding:0 160px; }
+  .kick { font-family:'IBM Plex Mono',monospace; font-size:16px;
+    letter-spacing:.3em; color:#ff951f; text-transform:uppercase;
+    margin-bottom:18px; animation:fadein .16s both; }
+  .req { font-size:46px; font-weight:500; letter-spacing:-.01em;
+    margin-bottom:66px; animation:fadein .16s .15s both; }
+  .req code { font-family:'IBM Plex Mono',monospace; color:#edcd8c;
+    background:#10141c; padding:6px 18px; border:1px solid #303139;
+    border-radius:5px; font-size:34px; }
+  .rows { display:flex; flex-direction:column; gap:54px; }
+  .row { display:flex; align-items:center; gap:38px; }
+  .tag { width:280px; text-align:right; font-family:'IBM Plex Mono',monospace;
+    font-size:16px; color:#c9ced8; text-transform:uppercase;
+    letter-spacing:.15em; line-height:1.6; }
   .stages { display:flex; align-items:center; gap:12px; }
-  .stage { padding:16px 26px; font-size:24px; border:1px solid #2a343e;
-    background:#0d141c; color:#3d4854; animation:fadein .5s both; }
-  .stage.ok { border-color:#2f6b45; background:#0d1a12; color:#5cb87e; }
+  .stage { padding:16px 26px; font-family:'IBM Plex Mono',monospace;
+    font-size:23px; border:1px solid #303139; border-radius:5px;
+    background:#10141c; color:#4a5058; animation:fadein .16s both; }
+  .stage.ok { border-color:#3f5a45; color:#8fb89b; }
   .stage.skip { border-style:dashed; }
-  .stage.over { border-color:#8a3226; background:#1e0f0c; color:#e06a52;
-    border-width:2px; animation:pulse 1.1s 1.8s ease-in-out infinite alternate; }
-  .arrow { color:#3a4550; font-size:20px; }
+  .stage.over { border-color:#ff951f; color:#ff951f; border-width:1.5px;
+    animation:fadein .16s both, pulse 1.1s 1.6s ease-in-out infinite alternate; }
+  .arrow { color:#303139; font-size:20px; }
   .should .stage:nth-child(1){animation-delay:.4s}.should .stage:nth-child(3){animation-delay:.55s}
   .should .stage:nth-child(5){animation-delay:.7s}.should .stage:nth-child(7){animation-delay:.85s}
   .should .stage:nth-child(9){animation-delay:1s}
-  .did .stage { animation-delay:1.4s }
-  .verdict { margin-top:60px; font-size:27px; color:#e06a52;
-    animation:fadein .8s 2.1s both; }
-  .verdict b { color:#d7dde3; }
-  @keyframes fadein { from { opacity:0; transform:translateY(12px) } to { opacity:1 } }
-  @keyframes pulse { from { box-shadow:0 0 0 0 rgba(224,106,82,.4) }
-                     to { box-shadow:0 0 18px 2px rgba(224,106,82,.3) } }
+  .did .stage { animation-delay:1.3s }
+  .verdict { margin-top:60px; font-size:27px; color:#c9ced8;
+    animation:fadein .16s 1.9s both; }
+  .verdict b { color:#edcd8c; font-weight:500; }
+  @keyframes fadein { from { opacity:0; transform:translateY(10px) } to { opacity:1 } }
+  @keyframes pulse { from { box-shadow:0 0 0 0 rgba(255,149,31,.35) }
+                     to { box-shadow:0 0 16px 2px rgba(255,149,31,.25) } }
+  @media (prefers-reduced-motion:reduce) { * { animation:none !important } }
 </style></head><body>
-  <div class="fig">FIG-03 · SCOPING — OBSERVED BEHAVIOUR</div>
+  <div class="kick">Scoping · observed behaviour</div>
   <div class="req">Request: <code>"change tilt to 25°"</code></div>
   <div class="rows">
     <div class="row should">

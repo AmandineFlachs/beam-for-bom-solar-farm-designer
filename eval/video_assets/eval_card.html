@@ -1,41 +1,40 @@
 <!DOCTYPE html>
-<!-- Eval results — spec-sheet table. 1920x1080. -->
-<html><head><meta charset="utf-8"><style>
+<!-- Eval table — Financial design system. 1920x1080. -->
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
   * { margin:0; box-sizing:border-box; }
-  body { width:1920px; height:1080px; background:#101418; color:#d7dde3;
-    font-family:'SF Mono','Menlo',monospace; display:flex;
-    flex-direction:column; justify-content:center; padding:0 160px;
-    background-image:
-      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-    background-size:80px 80px; }
-  .fig { font-size:20px; letter-spacing:.35em; color:#d97b29;
-    text-transform:uppercase; margin-bottom:24px; }
-  .headline { font-size:50px; font-weight:700; color:#eef2f5;
+  body { width:1920px; height:1080px; background:#07090e; color:#f4f5f7;
+    font-family:'IBM Plex Sans',sans-serif; display:flex; flex-direction:column;
+    justify-content:center; padding:0 190px; }
+  .kick { font-family:'IBM Plex Mono',monospace; font-size:16px;
+    letter-spacing:.3em; color:#ff951f; text-transform:uppercase;
+    margin-bottom:20px; }
+  .headline { font-size:52px; font-weight:500; letter-spacing:-.01em;
     margin-bottom:56px; }
-  .headline em { color:#d97b29; font-style:normal; }
-  table { border-collapse:collapse; width:1300px; font-size:30px; }
-  th { font-size:17px; letter-spacing:.2em; color:#5d6a76; font-weight:400;
-    text-transform:uppercase; text-align:right; padding:14px 26px;
-    border-bottom:1px solid #3a4550; }
+  .headline em { color:#edcd8c; font-style:normal; }
+  table { border-collapse:collapse; width:1360px;
+    font-family:'IBM Plex Mono',monospace; font-size:28px; }
+  th { font-size:15px; letter-spacing:.18em; color:#c9ced8; font-weight:400;
+    text-transform:uppercase; text-align:right; padding:14px 28px;
+    border-bottom:1px solid #303139; }
   th:first-child { text-align:left; }
-  td { padding:18px 26px; text-align:right; border-bottom:1px solid #1c232b;
-    color:#aab5bf; }
-  td:first-child { text-align:left; color:#d7dde3; font-weight:600; }
-  td.acc { color:#d97b29; }
-  .note { margin-top:52px; font-size:24px; color:#5d6a76; max-width:1300px;
+  td { padding:20px 28px; text-align:right; border-bottom:1px solid #1d2027;
+    color:#c9ced8; }
+  td:first-child { text-align:left; color:#f4f5f7; font-weight:500; }
+  td.gold { color:#edcd8c; }
+  .note { margin-top:52px; font-size:23px; color:#c9ced8; max-width:1360px;
     line-height:1.6; }
-  .note b { color:#aab5bf; font-weight:600; }
+  .note b { color:#f4f5f7; font-weight:500; }
 </style></head><body>
-  <div class="fig">TBL-02 · EVAL RESULTS — 66 AGENT RUNS</div>
+  <div class="kick">Eval · 66 agent runs</div>
   <div class="headline">More effort, <em>same correctness.</em></div>
   <table>
     <tr><th>effort</th><th>tasks passed</th><th>reasoning tok</th><th>output tok</th><th>latency</th></tr>
-    <tr><td>low</td><td>16/22</td><td>190</td><td class="acc">602</td><td>5.8 s</td></tr>
-    <tr><td>medium</td><td>16/22</td><td>449</td><td class="acc">919</td><td>7.2 s</td></tr>
-    <tr><td>high</td><td>15/22</td><td>748</td><td class="acc">1,279</td><td>9.1 s</td></tr>
+    <tr><td>low</td><td>16/22</td><td>190</td><td class="gold">602</td><td>5.8 s</td></tr>
+    <tr><td>medium</td><td>16/22</td><td>449</td><td class="gold">919</td><td>7.2 s</td></tr>
+    <tr><td>high</td><td>15/22</td><td>748</td><td class="gold">1,279</td><td>9.1 s</td></tr>
   </table>
   <div class="note">Tool selection ~100% at every effort. The failure is
-  <b>scoping</b>: narrow changes re-run stages they don't need, at every
-  effort level.</div>
+  <b>scoping</b>: narrow changes re-run stages they don't need.</div>
 </body></html>

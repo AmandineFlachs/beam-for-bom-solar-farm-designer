@@ -1,45 +1,55 @@
 <!DOCTYPE html>
-<!-- Title card — engineering sheet style. 1920x1080. -->
-<html><head><meta charset="utf-8"><style>
+<!-- Title card — Financial design system. 1920x1080. -->
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
   * { margin:0; box-sizing:border-box; }
-  body { width:1920px; height:1080px; background:#101418; color:#d7dde3;
-    font-family:'SF Mono','Menlo',monospace; display:flex;
-    flex-direction:column; justify-content:center; padding:0 140px;
-    background-image:
-      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-    background-size:80px 80px; position:relative; }
-  body::before, body::after, .tick::before, .tick::after {
-    content:''; position:absolute; width:26px; height:26px;
-    border:1px solid #3a4550; }
-  body::before { top:40px; left:40px; border-right:none; border-bottom:none; }
-  body::after { top:40px; right:40px; border-left:none; border-bottom:none; }
-  .tick::before { bottom:40px; left:40px; border-right:none; border-top:none; }
-  .tick::after { bottom:40px; right:40px; border-left:none; border-top:none; }
-  .tick { position:absolute; inset:0; pointer-events:none; }
-  .fig { font-size:20px; letter-spacing:.35em; color:#d97b29;
-    text-transform:uppercase; margin-bottom:36px; }
-  .rule { width:140px; height:1px; background:#3a4550; margin-bottom:36px; }
-  h1 { font-size:120px; font-weight:700; letter-spacing:-.01em;
-    color:#eef2f5; }
-  h1 span { color:#d97b29; }
-  .sub { font-size:34px; color:#8b97a3; margin-top:34px; max-width:1200px;
+  body { width:1920px; height:1080px; background:#07090e; color:#f4f5f7;
+    font-family:'IBM Plex Sans',sans-serif; display:flex; align-items:center;
+    padding:0 150px; gap:110px; }
+  .left { flex:1; }
+  .kick { font-family:'IBM Plex Mono',monospace; font-size:16px;
+    letter-spacing:.3em; color:#ff951f; text-transform:uppercase;
+    margin-bottom:34px; }
+  h1 { font-size:88px; font-weight:500; letter-spacing:-.02em;
+    line-height:1.02; }
+  .sub { font-size:30px; color:#c9ced8; margin-top:34px; max-width:760px;
     line-height:1.5; }
-  .sub b { color:#d7dde3; font-weight:600; }
-  .tags { display:flex; gap:0; margin-top:64px; border:1px solid #2a343e;
-    width:fit-content; }
-  .tags span { font-size:20px; padding:14px 30px; color:#8b97a3;
-    border-right:1px solid #2a343e; letter-spacing:.2em; }
-  .tags span:last-child { border-right:none; color:#d97b29; }
-  .meta { position:absolute; bottom:52px; left:140px; font-size:16px;
-    color:#3a4550; letter-spacing:.2em; }
+  .tags { display:flex; gap:0; margin-top:56px; border-top:1px solid #303139;
+    border-bottom:1px solid #303139; width:fit-content; }
+  .tags span { font-family:'IBM Plex Mono',monospace; font-size:15px;
+    padding:14px 26px; color:#c9ced8; letter-spacing:.18em;
+    border-right:1px solid #303139; }
+  .tags span:last-child { border-right:none; }
+  /* hero object: framed panel with thin offset outlines */
+  .frame { width:560px; flex-shrink:0; position:relative;
+    background:#10141c; border:1px solid #303139; border-radius:5px;
+    padding:56px 48px;
+    box-shadow:14px 14px 0 -1px #07090e, 14px 14px 0 0 #303139,
+               28px 28px 0 -1px #07090e, 28px 28px 0 0 #303139; }
+  .frame::after { content:''; position:absolute; inset:-60px;
+    background:radial-gradient(closest-side, rgba(255,149,31,.10), transparent 70%);
+    z-index:-1; }
+  .fl { font-family:'IBM Plex Mono',monospace; font-size:14px;
+    color:#c9ced8; letter-spacing:.2em; text-transform:uppercase;
+    margin-bottom:28px; }
+  .val { font-family:'IBM Plex Mono',monospace; font-size:84px;
+    color:#edcd8c; font-weight:500; line-height:1; }
+  .val small { font-size:30px; color:#c9ced8; }
+  .fd { font-size:19px; color:#c9ced8; margin-top:26px; line-height:1.55; }
+  .rule { height:1px; background:#303139; margin:26px 0; }
 </style></head><body>
-  <div class="tick"></div>
-  <div class="fig">DWG-01 · BUILD WITH BEAM</div>
-  <div class="rule"></div>
-  <h1>BEAM <span>for</span> BOM</h1>
-  <div class="sub">Draw a boundary. <b>Beam designs the solar farm</b>
-  and tells you what to buy.</div>
-  <div class="tags"><span>BOUNDARY</span><span>ENERGY</span><span>ARRAY</span><span>MATERIALS</span></div>
-  <div class="meta">SCALE 1:1 · SHEET 1 OF 3 · REV A</div>
+  <div class="left">
+    <div class="kick">Build with Beam</div>
+    <h1>BEAM for BOM</h1>
+    <div class="sub">Draw a boundary. Beam designs the solar farm and tells you what to buy.</div>
+    <div class="tags"><span>BOUNDARY</span><span>ENERGY</span><span>ARRAY</span><span>MATERIALS</span></div>
+  </div>
+  <div class="frame">
+    <div class="fl">Preliminary design · one prompt</div>
+    <div class="val">7.1<small> ha → MWp</small></div>
+    <div class="rule"></div>
+    <div class="fd">Boundary to bill of materials: terrain, layout, electrical,
+    yield, procurement. Every number from a tool call.</div>
+  </div>
 </body></html>

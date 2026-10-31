@@ -1,32 +1,33 @@
 <!DOCTYPE html>
-<!-- End card — engineering sheet style. 1920x1080. -->
-<html><head><meta charset="utf-8"><style>
+<!-- End card — Financial design system. 1920x1080. -->
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
   * { margin:0; box-sizing:border-box; }
-  body { width:1920px; height:1080px; background:#101418; color:#d7dde3;
-    font-family:'SF Mono','Menlo',monospace; display:flex;
-    flex-direction:column; align-items:center; justify-content:center;
-    background-image:
-      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-    background-size:80px 80px; }
-  .fig { font-size:20px; letter-spacing:.35em; color:#d97b29;
-    text-transform:uppercase; margin-bottom:40px; }
-  h1 { font-size:90px; font-weight:700; color:#eef2f5; }
-  h1 span { color:#d97b29; }
-  .line { font-size:30px; color:#8b97a3; margin-top:26px; }
-  .links { display:flex; gap:0; margin-top:70px; border:1px solid #2a343e; }
-  .links div { font-size:24px; padding:20px 44px; color:#aab5bf;
-    border-right:1px solid #2a343e; background:#0d141c; }
-  .links div:last-child { border-right:none; }
-  .agents { margin-top:56px; font-size:19px; color:#5d6a76; letter-spacing:.25em; }
-  .agents b { color:#d97b29; font-weight:600; }
+  body { width:1920px; height:1080px; color:#f4f5f7;
+    font-family:'IBM Plex Sans',sans-serif; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    background:radial-gradient(1200px 600px at 50% 78%, rgba(255,149,31,.12), transparent 65%), #07090e; }
+  .kick { font-family:'IBM Plex Mono',monospace; font-size:16px;
+    letter-spacing:.3em; color:#ff951f; text-transform:uppercase;
+    margin-bottom:36px; }
+  h1 { font-size:88px; font-weight:500; letter-spacing:-.02em; }
+  .line { font-size:30px; color:#c9ced8; margin-top:26px; }
+  .links { display:flex; gap:16px; margin-top:72px; }
+  .links div { font-family:'IBM Plex Mono',monospace; font-size:22px;
+    padding:20px 42px; color:#f4f5f7; border:1px solid #303139;
+    border-radius:40px; background:#10141c; }
+  .links div:first-child { background:#ff951f; border-color:#ff951f;
+    color:#07090e; font-weight:500; }
+  .agents { margin-top:60px; font-family:'IBM Plex Mono',monospace;
+    font-size:16px; color:#c9ced8; letter-spacing:.22em; }
+  .agents b { color:#edcd8c; font-weight:500; }
 </style></head><body>
-  <div class="fig">DWG-03 · SHEET 3 OF 3</div>
-  <h1>BEAM <span>for</span> BOM</h1>
-  <div class="line">Draw a boundary. It does the rest.</div>
+  <div class="kick">BEAM for BOM</div>
+  <h1>Draw a boundary. It does the rest.</h1>
   <div class="links">
-    <div>▶ huggingface.co/spaces/…</div>
-    <div>&lt;/&gt; github.com/…</div>
+    <div>Try it · huggingface.co/spaces/…</div>
+    <div>Code · github.com/…</div>
   </div>
   <div class="agents">EXTENDED BY <b>MIRROR</b> · RUNS ON <b>BEAM-1.0</b></div>
 </body></html>

@@ -1,50 +1,51 @@
 <!DOCTYPE html>
-<!-- Effort vs cost — industrial bar chart. 1920x1080. -->
-<html><head><meta charset="utf-8"><style>
+<!-- Effort vs cost — Financial design system. 1920x1080. -->
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
   * { margin:0; box-sizing:border-box; }
-  body { width:1920px; height:1080px; background:#101418; color:#d7dde3;
-    font-family:'SF Mono','Menlo',monospace; display:flex;
-    flex-direction:column; align-items:center; justify-content:center;
-    background-image:
-      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-    background-size:80px 80px; }
-  .fig { font-size:20px; letter-spacing:.35em; color:#d97b29;
-    text-transform:uppercase; margin-bottom:18px; animation:fadein .6s both; }
-  .title { font-size:50px; font-weight:700; color:#eef2f5; margin-bottom:60px;
-    animation:fadein .6s .15s both; }
-  .title em { color:#d97b29; font-style:normal; }
-  .chart { display:flex; align-items:flex-end; gap:160px; height:460px;
-    border-bottom:1px solid #3a4550; padding:0 50px;
-    background-image:repeating-linear-gradient(0deg, transparent, transparent 91px, rgba(255,255,255,.05) 92px); }
+  body { width:1920px; height:1080px; background:#07090e; color:#f4f5f7;
+    font-family:'IBM Plex Sans',sans-serif; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; }
+  .kick { font-family:'IBM Plex Mono',monospace; font-size:16px;
+    letter-spacing:.3em; color:#ff951f; text-transform:uppercase;
+    margin-bottom:18px; animation:fadein .16s both; }
+  .title { font-size:50px; font-weight:500; letter-spacing:-.01em;
+    margin-bottom:64px; animation:fadein .16s .15s both; }
+  .title em { color:#edcd8c; font-style:normal; }
+  .chart { display:flex; align-items:flex-end; gap:170px; height:450px;
+    border-bottom:1px solid #303139; padding:0 50px; }
   .col { display:flex; flex-direction:column; align-items:center;
     justify-content:flex-end; height:100%; }
-  .bars { display:flex; align-items:flex-end; gap:14px; }
-  .bar { width:78px; position:relative; animation:grow 1s cubic-bezier(.22,.9,.3,1) both;
+  .bars { display:flex; align-items:flex-end; gap:12px; }
+  .bar { width:80px; position:relative; animation:grow .5s ease both;
     transform-origin:bottom; }
   .bar .v { position:absolute; top:-40px; left:0; right:0; text-align:center;
-    font-size:24px; font-weight:700; }
-  .correct { background:#2b3947; border-top:3px solid #5d6a76; }
-  .correct .v { color:#aab5bf; }
-  .tok { background:#4a2f14; border-top:3px solid #d97b29; }
-  .tok .v { color:#d97b29; }
-  .lbl { margin-top:16px; font-size:22px; color:#5d6a76; letter-spacing:.25em;
-    text-transform:uppercase; animation:fadein .6s both; }
-  .c1 .bar,.c1 .lbl { animation-delay:.4s } .c2 .bar,.c2 .lbl { animation-delay:.8s }
-  .c3 .bar,.c3 .lbl { animation-delay:1.2s }
-  .note { margin-top:50px; font-size:24px; color:#5d6a76;
-    animation:fadein .8s 1.8s both; }
-  .note b { color:#aab5bf; }
-  .legend { display:flex; gap:40px; margin-top:24px; font-size:18px;
-    color:#5d6a76; letter-spacing:.1em; animation:fadein .6s 1.4s both; }
+    font-family:'IBM Plex Mono',monospace; font-size:23px; font-weight:500; }
+  .correct { background:#101522; border:1px solid #303139; }
+  .correct .v { color:#c9ced8; }
+  .tok { background:#1c1508; border:1px solid #ff951f; }
+  .tok .v { color:#edcd8c; }
+  .lbl { margin-top:16px; font-family:'IBM Plex Mono',monospace; font-size:17px;
+    color:#c9ced8; letter-spacing:.25em; text-transform:uppercase;
+    animation:fadein .16s both; }
+  .c1 .bar,.c1 .lbl { animation-delay:.4s } .c2 .bar,.c2 .lbl { animation-delay:.7s }
+  .c3 .bar,.c3 .lbl { animation-delay:1.0s }
+  .note { margin-top:50px; font-size:23px; color:#c9ced8;
+    animation:fadein .16s 1.3s both; }
+  .note b { color:#f4f5f7; font-weight:500; }
+  .legend { display:flex; gap:40px; margin-top:24px;
+    font-family:'IBM Plex Mono',monospace; font-size:15px; color:#c9ced8;
+    letter-spacing:.1em; animation:fadein .16s 1.1s both; }
   .legend span::before { content:''; display:inline-block; width:14px;
-    height:14px; margin-right:10px; vertical-align:-1px; }
-  .legend .lc::before { background:#2b3947; border-top:3px solid #5d6a76; }
-  .legend .lt::before { background:#4a2f14; border-top:3px solid #d97b29; }
+    height:14px; margin-right:10px; vertical-align:-1px; border-radius:2px; }
+  .legend .lc::before { background:#101522; border:1px solid #303139; }
+  .legend .lt::before { background:#1c1508; border:1px solid #ff951f; }
   @keyframes grow { from { transform:scaleY(0) } to { transform:scaleY(1) } }
-  @keyframes fadein { from { opacity:0; transform:translateY(12px) } to { opacity:1 } }
+  @keyframes fadein { from { opacity:0; transform:translateY(10px) } to { opacity:1 } }
+  @media (prefers-reduced-motion:reduce) { * { animation:none !important } }
 </style></head><body>
-  <div class="fig">FIG-02 · EFFORT VS OUTPUT TOKENS — 66 RUNS</div>
+  <div class="kick">Effort vs cost · 66 runs</div>
   <div class="title">More effort, <em>same correctness.</em></div>
   <div class="chart">
     <div class="col c1"><div class="bars">
