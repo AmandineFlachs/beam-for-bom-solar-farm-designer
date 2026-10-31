@@ -48,7 +48,7 @@ async function j<T>(r: Response): Promise<T> {
 }
 
 export const api = {
-  getProposal: (siteId: string) => request<{markdown:string;mode:string}>('/api/proposal', {method:'POST', body: JSON.stringify({site_id: siteId})}),
+  getProposal: async (siteId: string) => { const r = await fetch('/api/proposal', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({site_id: siteId})}); return r.json(); },
   createSite: (name: string, boundary: GeoPolygon, exclusions: Exclusion[]) =>
     fetch('/api/site', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, boundary, exclusions }) }).then(j<{ site_id: string }>),
