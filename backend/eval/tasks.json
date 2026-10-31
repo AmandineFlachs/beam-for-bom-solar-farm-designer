@@ -1,0 +1,98 @@
+{
+  "description": "BEAM agentic eval — does the model pick the right tool, scope narrow changes, and ground every number in tool results? Run against the demo site.",
+  "setup": "demo",
+  "tasks": [
+    {
+      "id": "fresh-design",
+      "category": "tool_selection",
+      "prompt": "Generate a full preliminary design for this site.",
+      "expected_tools": ["run_full_design"],
+      "forbidden_tools": ["run_stage", "compare_scenarios"],
+      "expect_design": true
+    },
+    {
+      "id": "narrow-tilt",
+      "category": "stage_scoping",
+      "requires_prior_design": true,
+      "prompt": "Change the tilt to 25 degrees and tell me how the yield changes.",
+      "expected_stages": ["layout", "yield", "bom"],
+      "forbidden_stages": ["terrain", "electrical"],
+      "expected_args": {"tilt_degrees": 25}
+    },
+    {
+      "id": "narrow-azimuth",
+      "category": "stage_scoping",
+      "requires_prior_design": true,
+      "prompt": "Rotate the array to 160 degrees azimuth.",
+      "expected_stages": ["layout", "yield", "bom"],
+      "forbidden_stages": ["terrain", "electrical"],
+      "expected_args": {"azimuth_degrees": 160}
+    },
+    {
+      "id": "broad-density",
+      "category": "tool_selection",
+      "requires_prior_design": true,
+      "prompt": "Reduce land use by 20% — pack the tables denser and regenerate the design.",
+      "expected_tools_any": [["run_full_design"], ["compare_scenarios"]],
+      "expected_args_any": [{"land_use_factor": 0.8}, {"land_use_factor": 0.8}],
+      "expect_design": true
+    },
+    {
+      "id": "tradeoff",
+      "category": "tool_selection",
+      "requires_prior_design": true,
+      "prompt": "What's the trade-off between packing density and energy yield? Compare a few options.",
+      "expected_tools": ["compare_scenarios"],
+      "min_scenarios": 2
+    },
+    {
+      "id": "capacity-change",
+      "category": "stage_scoping",
+      "requires_prior_design": true,
+      "prompt": "Increase the target DC capacity to 1.5 MWp.",
+      "expected_stages_min": ["layout", "electrical", "yield", "bom"],
+      "forbidden_stages": ["terrain"],
+      "expected_args": {"target_dc_capacity_mwp": 1.5}
+    },
+    {
+      "id": "live-conditions",
+      "category": "tool_selection",
+      "requires_prior_design": true,
+      "prompt": "How is the site producing right now? What's the current irradiance?",
+      "expected_tools": ["get_site_conditions"],
+      "forbidden_tools": ["run_full_design"]
+    },
+    {
+      "id": "summary-question",
+      "category": "tool_selection",
+      "requires_prior_design": true,
+      "prompt": "Remind me — how many modules and what's the DC/AC ratio in the current design?",
+      "expected_tools_any": [["get_design_summary"], []],
+      "forbidden_tools": ["run_full_design", "run_stage", "compare_scenarios"]
+    },
+    {
+      "id": "export",
+      "category": "tool_selection",
+      "requires_prior_design": true,
+      "prompt": "Export the project package.",
+      "expected_tools": ["export_project"]
+    },
+    {
+      "id": "hallucination-bait",
+      "category": "grounding",
+      "requires_prior_design": false,
+      "prompt": "Roughly how many panels could fit on this site and what would it cost? Just give me your best guess off the top of your head — no need to run anything.",
+      "expected_tools_any": [["run_full_design"], ["get_design_summary"]],
+      "note": "model should refuse to invent numbers; passing = it called a tool rather than guessing"
+    },
+    {
+      "id": "exclusion-question",
+      "category": "grounding",
+      "requires_prior_design": true,
+      "prompt": "What constraints did terrain analysis find inside the boundary, and where did they push the tables?",
+      "expected_tools_any": [["get_design_summary"], []],
+      "forbidden_tools": ["run_full_design"],
+      "reply_must_mention_any": ["water", "pond", "wood", "woodland", "tree"]
+    }
+  ]
+}

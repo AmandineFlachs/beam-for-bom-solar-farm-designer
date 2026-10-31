@@ -648,7 +648,7 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
       scene.add(m)
     }
     try {
-      const ac = pads.reduce((s, t) => [s[0] + t.cx, s[1] + t.cz], [0, 0])
+      const ac = pads.reduce((s: number[], t: { cx: number; cz: number }) => [s[0] + t.cx, s[1] + t.cz], [0, 0])
       groundLabel('PV ARRAY', ac[0] / Math.max(pads.length, 1), ac[1] / Math.max(pads.length, 1), Math.min(60, span * 0.2))
       if (e?.transformer_point) {
         const [tx, tz] = toXY(e.transformer_point.lon, e.transformer_point.lat)
@@ -670,8 +670,8 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
       chips.push({ pos, el })
     }
     try {
-      const l = d?.layout, y0 = d?.yield ?? d?.yield_
-      chip(new THREE.Vector3(0, Math.max(...pads.map(t => t.g)) - baseElev + 3.5, 0),
+      const l = design.layout, y0 = (design as any).yield
+      chip(new THREE.Vector3(0, Math.max(...pads.map((t: { g: number }) => t.g)) - baseElev + 3.5, 0),
         'DC CAPACITY', `${((l?.dc_capacity_kwp ?? 0) / 1000).toFixed(2)} MWp`, `${l?.table_count ?? 0} tables`)
       if (e?.transformer_point) {
         const [tx, tz] = toXY(e.transformer_point.lon, e.transformer_point.lat)

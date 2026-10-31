@@ -1,6 +1,6 @@
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import * as Cesium from 'cesium'
-import MapView, { flyTo, frameSite3d, view3dSite, viewTopDown, type DrawMode, type PickedInfo } from './MapView'
+import MapView, { flyTo, frameSite3d, type DrawMode, type PickedInfo } from './MapView'
 import Scene3D from './Scene3D'
 import ReportView from './ReportView'
 import StartScreen from './StartScreen'
@@ -43,6 +43,7 @@ export default function App() {
   const [report, setReport] = useState(false)
   const [started, setStarted] = useState(false)
   const [rightOpen, setRightOpen] = useState(true)
+  const [leftOpen, setLeftOpen] = useState(true)
   const [sunHour, setSunHour] = useState(15)
   const [sunPlaying, setSunPlaying] = useState(false)
   const [picked, setPicked] = useState<PickedInfo | null>(null)
@@ -66,14 +67,6 @@ export default function App() {
     setBoundary([]); setExclusions([]); setPendingEx([])
     setDesign(null); setSteps([]); setSiteId(null); setDrawMode('none')
     setError(null); setPicked(null)
-  }
-
-  const siteCentroid = () => {
-    if (!boundary.length) return null
-    return [
-      boundary.reduce((s, p) => s + p[0], 0) / boundary.length,
-      boundary.reduce((s, p) => s + p[1], 0) / boundary.length,
-    ]
   }
 
   const runDesign = async (sid: string, a: DesignAssumptions) => {
@@ -109,7 +102,7 @@ export default function App() {
     setGenerating(false)
   }
 
-  // Demo: committed site near Rochdale + warm caches → works offline
+  // Demo: committed Escrick Field site + warm caches → works offline
   const runDemo = async () => {
     setGenerating(true); setError(null); setDesign(null); setPicked(null)
     try {
@@ -130,19 +123,6 @@ export default function App() {
       setError(e.message)
     }
     setGenerating(false)
-  }
-
-  const centroidLL = () =>
-    siteCentroid() ?? (design?.site?.centroid
-      ? [design.site.centroid.lon, design.site.centroid.lat] : null)
-
-  const toggle3d = () => {
-    const c = centroidLL()
-    const next = !view3d
-    setView3d(next)
-    if (next) setSunHour(9.5)
-    if (c) next ? view3dSite(viewerRef.current, c[0], c[1], 90)
-               : viewTopDown(viewerRef.current, c[0], c[1])
   }
 
   // surface any runtime error in the UI (no devtools needed)
@@ -196,7 +176,19 @@ export default function App() {
 
       {/* floating glass side panels — appear after the start screen */}
       {started && (
-      <div className="absolute left-3 top-3 bottom-3 w-[292px] panel overflow-hidden z-10 fade-in">
+      <div className="absolute left-3 top-3 bottom-3 w-[292px] z-10 fade-in pointer-events-none">
+        <button onClick={() => setLeftOpen(o => !o)}
+          className="mapbtn pointer-events-auto absolute top-1/2 -translate-y-1/2 w-6 h-14 text-xs z-20"
+          style={leftOpen ? { right: '-1.75rem' } : { left: '0.25rem' }}
+          title={leftOpen ? 'Collapse panel' : 'Expand panel'}>
+          {leftOpen ? '◂' : '▸'}
+        </button>
+        {!leftOpen && (
+          <div className="pointer-events-auto absolute top-0 left-0 panel px-3 py-2">
+            <div className="text-sm font-extrabold brand-text whitespace-nowrap">BEAM for BOM: Solar Farm</div>
+          </div>
+        )}
+        <div className={`panel h-full overflow-hidden pointer-events-auto transition-transform duration-300 ${leftOpen ? '' : '-translate-x-[calc(100%+16px)]'}`}>
         <LeftPanel
           onFlyTo={(lon, lat) => flyTo(viewerRef.current, lon, lat, 20000)}
           drawMode={drawMode} setDrawMode={setDrawMode}
@@ -209,6 +201,7 @@ export default function App() {
           canGenerate={boundary.length >= 3}
           onDemo={runDemo}
         />
+        </div>
       </div>
       )}
       {(generating || design) && (
@@ -286,7 +279,7 @@ export default function App() {
         )}
         {/* legend — collapsible, bottom-left, clear of top buttons */}
         {design && (
-          <div className="absolute bottom-14 left-[308px] z-10 panel px-2.5 py-1.5 text-[10px] pointer-events-auto">
+          <div className={`absolute bottom-14 z-10 panel px-2.5 py-1.5 text-[10px] pointer-events-auto transition-all duration-300 ${leftOpen ? 'left-[308px]' : 'left-10'}`}>
             <button onClick={e => (e.currentTarget.parentElement!.querySelector('.lg-body') as HTMLElement)?.classList.toggle('hidden')}
               className="uppercase text-slate-400 w-full text-left hover:text-slate-200">Legend ▾</button>
             <div className="lg-body space-y-0.5 mt-1">

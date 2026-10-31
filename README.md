@@ -1,4 +1,4 @@
-# BEAM for BOM
+# BEAM for BOM: Solar Farm
 
 **Draw a boundary. Beam designs the solar farm and tells you what to buy.**
 
@@ -105,7 +105,9 @@ and serves it from FastAPI on port 7860. Set `BEAM_API_*` as Space secrets.
 
 ## Demo scenario
 
-Click **Run demo scenario**: a ~4 ha field near Escrick in the Vale of York
+Click **Run the demo** (or demo scenario in the side panel): a ~7 ha real OSM farmland parcel at Escrick Field in the Vale of York — flat, unprotected, with a residential buffer exclusion. The pipeline detects woodland/roads/buildings from OpenStreetMap and lays out a ~4 MWp array.
+
+**60-second demo:** demo → globe fly-in → design pipeline → auto 3D dive → **3D Preview** to walk the site first-person (WASD + mouse, sprint/jump, equipment inspection labels, cable trenches, weather mast, gate) → **Report** for the PDF one-pager → Ask Beam e.g. "reduce land use by 20%"
 (flat farmland), with a copse exclusion zone; 430 W modules, 20° tilt,
 south-facing, 11 kV connection, ~1.2 MWp target. Then ask Beam:
 *"Reduce land use by 20%"* — it re-runs the layout with a denser packing

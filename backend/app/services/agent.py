@@ -268,6 +268,7 @@ def _llm_chat(site: Site, message: str, assumptions: DesignAssumptions,
         return '{"error": "unknown tool"}'
 
     nonlocal_design = [design]
+    tools_called: list[dict] = []
     reasoning_parts: list[str] = []
     usage = {"prompt_tokens": 0, "completion_tokens": 0, "reasoning_tokens": 0}
     t0 = time.time()
@@ -296,11 +297,13 @@ def _llm_chat(site: Site, message: str, assumptions: DesignAssumptions,
         messages.append(msg)
         if not msg.get("tool_calls"):
             meta = {"model": model, "effort": effort, "mode": "live",
-                    "latency_s": round(time.time() - t0, 1), **usage}
+                    "latency_s": round(time.time() - t0, 1),
+                    "tools_called": tools_called, **usage}
             return (msg.get("content") or "", nonlocal_design[0], steps,
                     "\n\n---\n\n".join(reasoning_parts), meta)
         for tc in msg["tool_calls"]:
             fn, args = tc["function"]["name"], json.loads(tc["function"].get("arguments") or "{}")
+            tools_called.append({"tool": fn, "args": args})
             try:
                 out = call_tool(fn, args)
             except Exception as e:
@@ -308,7 +311,8 @@ def _llm_chat(site: Site, message: str, assumptions: DesignAssumptions,
             messages.append({"role": "tool", "tool_call_id": tc["id"], "content": out})
 
     meta = {"model": model, "effort": effort, "mode": "live",
-            "latency_s": round(time.time() - t0, 1), **usage}
+            "latency_s": round(time.time() - t0, 1),
+            "tools_called": tools_called, **usage}
     return ("Design complete — see the results panel.", nonlocal_design[0], steps,
             "\n\n---\n\n".join(reasoning_parts), meta)
 
