@@ -1,4 +1,4 @@
-export interface GeoPolygon { type: 'Polygon'; coordinates: number[][][] }
+export type GeoPolygon = { type: 'Polygon'; coordinates: number[][][] } | { type: 'MultiPolygon'; coordinates: number[][][][] }
 export interface Exclusion { id: string; label: string; geometry: GeoPolygon }
 
 export interface DesignAssumptions {
@@ -48,6 +48,7 @@ async function j<T>(r: Response): Promise<T> {
 }
 
 export const api = {
+  getProposal: (siteId: string) => request<{markdown:string;mode:string}>('/api/proposal', {method:'POST', body: JSON.stringify({site_id: siteId})}),
   createSite: (name: string, boundary: GeoPolygon, exclusions: Exclusion[]) =>
     fetch('/api/site', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, boundary, exclusions }) }).then(j<{ site_id: string }>),

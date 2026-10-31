@@ -263,7 +263,7 @@ export default function MapView({ drawMode, boundary, exclusions, design, view3d
     ;(async () => {
       const rings = [
         ...(boundary.length >= 3 ? [[...boundary, boundary[0]]] : []),
-        ...exclusions.map(ex => [...ex.geometry.coordinates[0], ex.geometry.coordinates[0][0]]),
+        ...exclusions.map(ex => [...(ex.geometry as any).coordinates[0], (ex.geometry as any).coordinates[0][0]]),
       ]
       const allPos = rings.flatMap(r => r.map(([lon, lat]) => ({ lon, lat })))
       const bH = view3d && esriTerrainRef.current && terrainReady
@@ -294,7 +294,7 @@ export default function MapView({ drawMode, boundary, exclusions, design, view3d
         point: { pixelSize: 7, color: Cesium.Color.CYAN, outlineColor: Cesium.Color.WHITE, outlineWidth: 1 },
       }))
       exclusions.forEach((ex, xi) => {
-        const ring = ex.geometry.coordinates[0]
+        const ring = (ex.geometry as any).coordinates[0]
         if (ring.length >= 3) {
           const positions = elevated([...ring, ring[0]])
           const ent = ds.entities.add({
