@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+.env
+node_modules/
+dist/
+backend/beam_projects.db
+backend/exports/*.geojson
+backend/exports/*.csv
+backend/exports/*.md
+backend/exports/*.json
+# NOTE: backend/app/cache/** is intentionally committed —
+# it holds the warmed elevation/PVGIS/OSM responses for the demo site.
+
+# local artifacts
+backend/.env
+/tmp
+exports/
+*.zip

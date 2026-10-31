@@ -1,0 +1,25 @@
+# Devin Cloud snapshot blueprint for BEAM for BOM.
+# Ready to attach via `devin cloud drs blueprint-create --repo <REPO>`
+# once the project lives in a git repo.
+initialize:
+  - run: |
+      cd backend && python -m venv .venv && .venv/bin/pip install -r requirements.txt
+  - run: |
+      cd frontend && npm install
+maintenance:
+  - run: |
+      cd backend && .venv/bin/python -m uvicorn app.main:app --port 8000 &
+      cd frontend && npm run dev &
+knowledge:
+  - name: test
+    contents: |
+      cd backend && .venv/bin/python -m pytest tests -x -q
+  - name: lint
+    contents: |
+      cd frontend && npx tsc -b
+  - name: startup
+    contents: |
+      Backend :8000 (uvicorn app.main:app), frontend :5173 (vite dev, proxies
+      /api). Demo: POST /api/demo then Generate. Beam needs BEAM_API_BASE,
+      BEAM_API_KEY, BEAM_MODEL env vars (org secrets) — falls back to
+      offline scripted mode without them.

@@ -1,0 +1,11 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+shapely>=2.0
+pyproj>=3.6
+httpx>=0.27
+pvlib>=0.10
+pandas>=2.0
+networkx>=3.0
+pytest>=8.0
+python-dotenv>=1.0
