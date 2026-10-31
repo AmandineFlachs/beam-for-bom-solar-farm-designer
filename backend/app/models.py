@@ -1,7 +1,7 @@
 """Pydantic models for BEAM for BOM."""
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, Union
 from pydantic import BaseModel, Field
 
 
@@ -9,6 +9,11 @@ from pydantic import BaseModel, Field
 class PolygonGeometry(BaseModel):
     type: Literal["Polygon"] = "Polygon"
     coordinates: list[list[list[float]]]  # [[[lon, lat], ...]]
+
+
+class MultiPolygonGeometry(BaseModel):
+    type: Literal["MultiPolygon"] = "MultiPolygon"
+    coordinates: list[list[list[list[float]]]]  # [[[[lon,lat],...]]]
 
 
 class PointGeometry(BaseModel):
@@ -26,7 +31,7 @@ class Exclusion(BaseModel):
 class Site(BaseModel):
     site_id: str
     name: str = "Untitled site"
-    boundary: PolygonGeometry
+    boundary: Union[PolygonGeometry, MultiPolygonGeometry]
     exclusions: list[Exclusion] = []
     country: Optional[str] = None
     centroid: dict[str, float] = {}
@@ -34,7 +39,7 @@ class Site(BaseModel):
 
 class SiteCreateRequest(BaseModel):
     name: str = "Untitled site"
-    boundary: PolygonGeometry
+    boundary: Union[PolygonGeometry, MultiPolygonGeometry]
     exclusions: list[Exclusion] = []
     country: Optional[str] = None
 

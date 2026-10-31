@@ -16,3 +16,7 @@ backend/.env
 /tmp
 exports/
 *.zip
+
+# eval artifacts
+backend/eval/ledger.jsonl
+backend/eval/results.csv

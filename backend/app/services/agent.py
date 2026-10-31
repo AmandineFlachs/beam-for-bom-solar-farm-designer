@@ -123,6 +123,57 @@ def beam_configured() -> bool:
     return bool(os.getenv("BEAM_API_BASE") and os.getenv("BEAM_API_KEY"))
 
 
+_LEDGER_PATH = os.getenv("BEAM_LEDGER",
+                         os.path.join(os.path.dirname(__file__), "..", "..",
+                                      "eval", "ledger.jsonl"))
+
+
+def beam_call(messages: list[dict], tools: list[dict] | None = None,
+              effort: str | None = None, surface: str = "chat") -> dict:
+    """Single call to the Beam endpoint — every LLM surface should go through
+    this so all calls land in the eval ledger. Returns the response body."""
+    import httpx
+
+    base = os.environ["BEAM_API_BASE"].rstrip("/")
+    key = os.environ["BEAM_API_KEY"]
+    model = os.getenv("BEAM_MODEL", "beam-1")
+    effort = effort or os.getenv("BEAM_REASONING_EFFORT", "medium")
+
+    payload: dict = {"model": model, "messages": messages,
+                     "reasoning_effort": effort}
+    if tools:
+        payload["tools"] = tools
+    t0 = time.time()
+    r = httpx.post(f"{base}/chat/completions",
+                   headers={"Authorization": f"Bearer {key}"},
+                   json=payload, timeout=300)
+    r.raise_for_status()
+    body = r.json()
+
+    try:
+        msg = body["choices"][0]["message"]
+        u = body.get("usage") or {}
+        rec = {
+            "ts": time.time(), "surface": surface, "model": model,
+            "effort": effort, "latency_s": round(time.time() - t0, 1),
+            "prompt_tokens": u.get("prompt_tokens", 0),
+            "completion_tokens": u.get("completion_tokens", 0),
+            "reasoning_tokens": (u.get("completion_tokens_details") or {})
+                                .get("reasoning_tokens", 0),
+            "tool_calls": [{"tool": tc["function"]["name"],
+                            "args": json.loads(tc["function"].get("arguments") or "{}")}
+                           for tc in msg.get("tool_calls") or []],
+            "reasoning_chars": len(msg.get("reasoning_content") or ""),
+            "reply_chars": len(msg.get("content") or ""),
+        }
+        os.makedirs(os.path.dirname(_LEDGER_PATH), exist_ok=True)
+        with open(_LEDGER_PATH, "a") as f:
+            f.write(json.dumps(rec) + "\n")
+    except Exception:
+        pass  # ledger is observability — never break a call over it
+    return body
+
+
 def scripted_beam_reply(design: DesignResponse | None, site: Site | None,
                         message: str) -> str:
     """Deterministic Beam narration of real tool results — no LLM needed."""
@@ -207,10 +258,6 @@ def _site_context(site: Site, design: DesignResponse | None) -> str:
 # ---------------------------------------------------------------- LLM path
 def _llm_chat(site: Site, message: str, assumptions: DesignAssumptions,
               effort: str | None) -> tuple[str, DesignResponse | None, list[dict], str, dict]:
-    import httpx
-
-    base = os.environ["BEAM_API_BASE"].rstrip("/")
-    key = os.environ["BEAM_API_KEY"]
     model = os.getenv("BEAM_MODEL", "beam-1")
     effort = effort or os.getenv("BEAM_REASONING_EFFORT", "medium")
 
@@ -274,15 +321,7 @@ def _llm_chat(site: Site, message: str, assumptions: DesignAssumptions,
     t0 = time.time()
 
     for _ in range(8):  # tool loop
-        r = httpx.post(
-            f"{base}/chat/completions",
-            headers={"Authorization": f"Bearer {key}"},
-            json={"model": model, "messages": messages, "tools": TOOLS,
-                  "reasoning_effort": effort},
-            timeout=300,
-        )
-        r.raise_for_status()
-        body = r.json()
+        body = beam_call(messages, tools=TOOLS, effort=effort, surface="chat")
         msg = body["choices"][0]["message"]
         u = body.get("usage") or {}
         usage["prompt_tokens"] += u.get("prompt_tokens", 0)

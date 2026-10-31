@@ -160,3 +160,21 @@ def test_bom_quantities():
     assert flat["Fixed-tilt PV table"].quantity == layout.table_count
     assert flat["Ground screw / pile"].quantity == layout.table_count * 8
     assert flat["250 kW string inverter"].quantity == elec.inverter_count
+
+def test_multipolygon_area_and_layout():
+    from shapely.geometry import MultiPolygon, Polygon
+    from app.models import Site, DesignAssumptions
+    from app.services.geo import LocalCRS, area_ha
+    from app.services.layout import generate_layout
+    crs = LocalCRS(53.6, -2.1)
+    # two 100m squares
+    def sq(cx, cy):
+        h=50
+        ring=[(cx-h,cy-h),(cx+h,cy-h),(cx+h,cy+h),(cx-h,cy+h),(cx-h,cy-h)]
+        return [(crs.to_wgs84(x,y)[0], crs.to_wgs84(x,y)[1]) for x,y in ring]
+    ring1=sq(-120,0); ring2=sq(120,0)
+    boundary={"type":"MultiPolygon","coordinates":[[[list(p) for p in ring1]],[[list(p) for p in ring2]]]}
+    site=Site(site_id="mp",name="MP",boundary=boundary,exclusions=[],centroid={"lat":53.6,"lon":-2.1})
+    assert area_ha(boundary) > 0
+    a=generate_layout(site, DesignAssumptions())
+    assert a.tables

@@ -32,7 +32,8 @@ def validate_polygon(geom: dict) -> Polygon:
             raise ValueError("Polygon is invalid and cannot be repaired")
         poly = fixed
     if poly.geom_type == "MultiPolygon":
-        poly = max(poly.geoms, key=lambda g: g.area)
+        if not poly.geoms:
+            raise ValueError("MultiPolygon is empty")
     if poly.area == 0:
         raise ValueError("Polygon has zero area")
     return poly
