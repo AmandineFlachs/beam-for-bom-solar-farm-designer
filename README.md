@@ -84,6 +84,24 @@ SQLite project store
   (`backend/eval/ledger.jsonl`): surface, effort, per-call tokens
   including reasoning, tool calls with args, latency.
 
+### What Beam carries in this product
+
+Beam is the reasoning layer over a deterministic pipeline; the services
+compute and Beam decides. Concretely it handles:
+
+- **Intent → tool mapping**: "reduce land use 20%" becomes
+  `run_full_design(land_use_factor=0.8)`; "change tilt to 25°" becomes a
+  scoped `run_stage` call. In eval this selection is near-perfect (see
+  below).
+- **Scoping judgement**: deciding which pipeline stages a change
+  actually requires — the hard part of agentic engineering work.
+- **Grounded narration**: the proposal text and every chat answer cite
+  only tool output; asked to "just guess" a number, Beam called a tool
+  instead in 5 of 6 runs.
+- **Effort scaling**: `reasoning_effort` low→max is exposed per reply —
+  and our eval shows `low` already saturates tool correctness, so the
+  demo runs cheap by default.
+
 ## Evaluating Beam
 
 11 agentic tasks (`backend/eval/tasks.json`) cover tool selection,
@@ -192,6 +210,9 @@ Space secrets. Live demo: SPACE_URL
 - Exclusions: OpenStreetMap (buildings, water, woodland, per-type buffers)
 - Yield: PVGIS 5.x via `pvlib.iotools` (hourly, monthly fallback, cached)
 - Geocoding: Open-Meteo Geocoding API
+- 3D props: gate/fence GLBs converted from NVIDIA SimReady assets by
+  [codepawl/simready-glb](https://github.com/codepawl/simready-glb),
+  licensed CC-BY-4.0
 
 ## Limitations
 
