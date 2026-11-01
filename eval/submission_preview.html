@@ -171,6 +171,22 @@ SQLite project store</code></pre>
             <li><b>Call ledger</b>: all LLM calls land in
               <code>backend/eval/ledger.jsonl</code>.</li>
           </ul>
+          <h3>What Beam carries in this product</h3>
+          <p>Beam is the reasoning layer over a deterministic pipeline; the
+          services compute and Beam decides. Concretely it handles:</p>
+          <ul>
+            <li><b>Intent → tool mapping</b>: "reduce land use 20%" becomes
+              <code>run_full_design(land_use_factor=0.8)</code>; "change tilt
+              to 25°" becomes a scoped <code>run_stage</code> call.</li>
+            <li><b>Scoping judgement</b>: deciding which pipeline stages a
+              change actually requires.</li>
+            <li><b>Grounded narration</b>: the proposal and every chat answer
+              cite only tool output; asked to "just guess" a number, Beam
+              called a tool instead in 5 of 6 runs.</li>
+            <li><b>Effort scaling</b>: <code>reasoning_effort</code> low→max
+              per reply — eval shows <code>low</code> already saturates tool
+              correctness, so the demo runs cheap by default.</li>
+          </ul>
           <h2>Evaluating Beam</h2>
           <p>11 agentic tasks cover tool selection, pipeline scoping and
           grounding — 66 runs at three reasoning efforts against the live
@@ -307,12 +323,24 @@ cd frontend && npm install && npm run dev</code></pre>
         re-prices the site live</li>
     </ul>
     <h2>How Beam is used</h2>
-    <p><code>POST /api/chat</code> is a true multi-turn tool-calling loop with
-    6 typed tools. <code>POST /api/proposal</code> has Beam write the proposal
-    narrative with every number grounded in the design JSON. The Reflection
-    API requires <code>reasoning_content</code> echoed back verbatim on every
-    assistant tool-call turn; we preserve it across turns, and every reply
-    exposes Beam's reasoning trace plus token and latency meta in the UI.</p>
+    <p>Beam is the reasoning layer over the whole product; the deterministic
+    services compute, Beam decides. Three surfaces:</p>
+    <ul>
+      <li><code>POST /api/chat</code> — a true multi-turn tool-calling loop
+        with 6 typed tools. Beam maps intent to calls ("reduce land use 20%"
+        → <code>land_use_factor=0.8</code>), scopes which stages a change
+        needs, and narrates grounded answers.</li>
+      <li><code>POST /api/proposal</code> — Beam writes the proposal narrative
+        with every number grounded in the design JSON.</li>
+      <li>Reasoning transparency — <code>reasoning_content</code> surfaced per
+        turn in the chat UI with per-reply tokens and latency;
+        <code>reasoning_effort</code> low→max selectable live.</li>
+    </ul>
+    <p>What the model showed in this workload: near-perfect tool selection at
+    every effort level, correct intent→args mapping including scoped
+    <code>run_stage</code> plans, and strict grounding — asked to "just
+    guess" a number it called a tool in 5 of 6 runs. Its weakest point was
+    stage scoping, not tool choice.</p>
     <h2>How it was built</h2>
     <p>Mirror (Reflection's agent) added MultiPolygon boundaries, the
     <code>/api/proposal</code> surface and shading-derived row pitch. Session

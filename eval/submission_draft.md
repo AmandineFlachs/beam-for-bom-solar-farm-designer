@@ -62,12 +62,26 @@ and Beam drives a deterministic engineering pipeline end to end:
 
 ## How Beam is used
 
-Two surfaces. `POST /api/chat` is a true multi-turn tool-calling loop with
-6 typed tools (run_full_design, run_stage, compare_scenarios,
-get_site_conditions, get_design_summary, export_project). `POST
-/api/proposal` has Beam write the proposal narrative with every number
-grounded in the design JSON, falling back to a template when Beam is not
-configured.
+Beam is the reasoning layer over the whole product; the deterministic
+services compute, Beam decides. Three surfaces:
+
+- `POST /api/chat` — a true multi-turn tool-calling loop with 6 typed
+  tools (run_full_design, run_stage, compare_scenarios,
+  get_site_conditions, get_design_summary, export_project). Beam maps
+  intent to calls ("reduce land use 20%" → `land_use_factor=0.8`),
+  scopes which stages a change needs, and narrates grounded answers.
+- `POST /api/proposal` — Beam writes the proposal narrative with every
+  number grounded in the design JSON (template fallback when Beam is
+  not configured).
+- Reasoning transparency — `reasoning_content` is surfaced per turn in
+  the chat UI ("Beam's reasoning") alongside per-reply tokens and
+  latency; `reasoning_effort` low→max is selectable live.
+
+What the model showed in this workload: near-perfect tool selection at
+every effort level, correct intent→args mapping including scoped
+`run_stage` plans, and strict grounding — asked to "just guess" a
+number it called a tool in 5 of 6 runs. Its weakest point was stage
+scoping, not tool choice (details in Results).
 
 The Reflection API requires `reasoning_content` echoed back verbatim on
 every assistant tool-call turn; without it the call returns 400. We

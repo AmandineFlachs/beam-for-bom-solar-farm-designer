@@ -1615,7 +1615,6 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, sunHour, onSunHou
     api_.current = { setSun, enter, overview }
 
     ;(window as any).__beamScene = scene
-    ;(window as any).__beamDebug = () => ({ walkMode, locked: controls.isLocked, keys: [...keys], pos: camera.position.toArray() })
     // ---- loop ----
     let raf = 0, frame = 0
     const clock = new THREE.Clock()
