@@ -1,25 +1,31 @@
-# BEAM for BOM: Solar Farm
+# BEAM for BOM: Solar Farm Designer
 
-**Draw a boundary. Beam designs the solar farm and tells you what to buy.**
+**Draw a boundary. Beam designs the solar farm, estimates the energy,
+and writes the report — then lets you walk the site in 3D.**
 
-Browser-based agentic solar-farm pre-design tool built for the Beam hackathon.
-A user draws a land boundary on a satellite globe, adds exclusion zones, picks
-design assumptions, and BEAM (the agent) produces a preliminary utility-scale
-solar design: terrain screening, PV table layout, DC/AC electrical sizing,
-PVGIS yield estimate, grid/transformer recommendation, and a procurement-ready
-bill of materials.
+Browser-based agentic solar-farm feasibility studio built for the Beam
+hackathon. A user draws a land boundary on a satellite globe, and BEAM
+(the agent) produces a preliminary utility-scale design end to end:
+terrain screening with OSM auto-exclusions, PV table layout, DC/AC
+electrical sizing, PVGIS yield estimate, grid/transformer
+recommendation, a procurement-ready bill of materials, and a written
+proposal. A Three.js preview rebuilds the site on real heightfield
+terrain with a time-of-day sun study and walkable first-person mode,
+and a conversational layer ("Ask Beam") lets you re-plan the site in
+plain language.
 
 > Preliminary feasibility and procurement-planning only. Not a bankable,
 > construction-ready, or grid-application design.
 
-## BEAM workflow
+## The pipeline
 
-- **B**oundary — draw the site and exclusion zones on satellite imagery
-- **E**nergy — PVGIS solar-resource assessment and generation estimate
-- **A**rray — deterministic fixed-tilt PV table layout engine
-- **M**aterials — DC/AC electrical sizing, transformer rules, BOM, exports
+- **Boundary** — draw the site and exclusion zones on satellite imagery
+- **Energy** — PVGIS solar-resource assessment and generation estimate
+- **Array** — deterministic fixed-tilt PV table layout engine
+- **Materials** — DC/AC electrical sizing, transformer rules, BOM, exports
 
-The agent (Beam, via Pi-style tool calling) **never invents a number** — every
+The agent (Beam, Reflection's 501B-parameter reasoning model, via tool
+calling) **never invents a number** — every
 figure comes from a typed backend tool call. If no Beam endpoint is configured
 the app falls back to a deterministic scripted Beam that narrates the same
 tool results, so the demo always works (the UI labels it "offline scripted
@@ -105,13 +111,19 @@ and serves it from FastAPI on port 7860. Set `BEAM_API_*` as Space secrets.
 
 ## Demo scenario
 
-Click **Run the demo** (or demo scenario in the side panel): a ~7 ha real OSM farmland parcel at Escrick Field in the Vale of York — flat, unprotected, with a residential buffer exclusion. The pipeline detects woodland/roads/buildings from OpenStreetMap and lays out a ~4 MWp array.
+Click **Run the demo**: a ~7 ha real OSM farmland parcel at Escrick
+Field in the Vale of York — flat, unprotected, with a pond and a copse
+the pipeline detects from OpenStreetMap and excludes automatically.
+The layout engine packs 145 tables / 3,480 modules around them for a
+1.5 MWp array, estimated at ~1,383 MWh/yr via PVGIS.
 
-**60-second demo:** demo → globe fly-in → design pipeline → auto 3D dive → **3D Preview** to walk the site first-person (WASD + mouse, sprint/jump, equipment inspection labels, cable trenches, weather mast, gate) → **Report** for the PDF one-pager → Ask Beam e.g. "reduce land use by 20%"
-(flat farmland), with a copse exclusion zone; 430 W modules, 20° tilt,
-south-facing, 11 kV connection, ~1.2 MWp target. Then ask Beam:
-*"Reduce land use by 20%"* — it re-runs the layout with a denser packing
-factor and updates the BOM.
+**60-second demo:** run the demo → globe fly-in → design pipeline →
+**Report** for capacity, yield and the BOM one-pager → **3D Preview**
+for the terrain scene, sun-slider exposure study and first-person walk
+(WASD + mouse, sprint/jump, equipment inspection labels, cable
+trenches, weather mast, gate) → **Ask Beam** e.g. "reduce land use by
+20%" — it re-runs the layout with a denser packing factor and updates
+the BOM.
 
 During terrain analysis, BEAM also queries OpenStreetMap for buildings,
 water bodies and woodland inside the boundary and auto-excludes them

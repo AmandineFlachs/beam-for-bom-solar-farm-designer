@@ -17,9 +17,7 @@ backend/.env
 exports/
 *.zip
 
-# eval artifacts
-backend/eval/ledger.jsonl
-backend/eval/results.csv
+# eval artifacts are committed (submission evidence)
 
 # tooling + OS
 .DS_Store

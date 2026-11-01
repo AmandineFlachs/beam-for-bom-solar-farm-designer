@@ -1,73 +1,147 @@
-# VIDEO SCRIPT v5 — face-bubble narration (~70 s)
+# VIDEO SCRIPT v8 — face-bubble narration (~150 s)
 
-Format: your face in a persistent circle bubble over capture and graph
-footage. Full-frame face at the very open and very close, or bubble
-throughout. This is a Build-with-Beam submission: the model is the subject,
-the product is the evidence. HTML assets in eval/video_assets/. Captions
-burned.
+Format: face in a persistent circle bubble over capture and diagram
+footage; full-frame face at the open. Product showcase, no eval
+findings. Cold open with the result, then problem, a four-part demo
+with a beat per feature, how Beam works, close. HTML assets in
+eval/video_assets/. Captions burned.
 
 ## Beat map
 
 | Beat | Screen | Bubble? | Len |
 |---|---|---|---|
-| 1. Hook | FACE full → flythrough | cut to bubble | 10s |
-| 2. Problem + product | draw → exclusions → 3D → chat | bubble | 25s |
-| 3. What Beam did | effort_cost → scoping_map | bubble | 25s |
-| 4. Close | end card | bubble/full | 8s |
+| 1. Cold open | FACE full → C1 flythrough | cut to bubble | 10s |
+| 2. Problem + product | map → boundary draw | bubble | 12s |
+| 3a. Demo: exclusions | C2 draw → red exclusions → pack | bubble | 15s |
+| 3b. Demo: report | C3 ReportView scroll | bubble | 18s |
+| 3c. Demo: sun study | C4 shadow sweep | bubble | 15s |
+| 3d. Demo: Ask Beam | C5 chat + repack | bubble | 18s |
+| 4. How Beam works | architecture.html → agent_loop.html | bubble | 40s |
+| 5. Close | flythrough tail → end card | bubble ducks | 12s |
 
 ## Narration (read to camera, plays under the bubble)
 
-**N1 (~10s):** "I gave Beam, Reflection's five-hundred-billion parameter
-reasoning model, a satellite map and one job: design a solar farm on it.
-Then I measured how it actually thinks."
+**N1 (~10s):** "I gave Beam a satellite map. About a minute later it
+had placed a hundred and forty-five tables, three and a half thousand
+solar panels, one point five megawatts, and written the bill of
+materials. Here's what happened."
 
-**N2 (~25s):** "The problem it solves is real: screening land for solar
-takes weeks. Here, Beam calls real engineering tools. You draw a boundary,
-it finds the pond and the copse itself from OpenStreetMap, packs tables
-around them, sizes the electrical kit, estimates yield, writes the bill of
-materials. Ask it to pack tighter and you watch it reason, then repack.
-Ask it to guess a number and it calls a tool instead. It does not invent
-figures."
+**N2 (~12s):** "Screening land for utility-scale solar still takes
+weeks. Desktop studies, map layers, layouts redone every time a
+constraint changes. This is BEAM for BOM, built on Beam, Reflection's
+biggest reasoning model."
 
-**N3 (~25s):** "So I measured it. Eleven agent tasks at three reasoning
-efforts. Tool selection? Nearly perfect, even at low effort. But high
-effort costs twice the tokens for zero extra correctness. And its real
-weakness is scoping, not choosing. Ask for a tilt change and it re-runs the
-electrical stage every single time. More thinking did not fix it."
+**N3a (~15s):** "You draw a boundary on the globe, one parcel or
+several. Beam pulls OpenStreetMap and finds the constraints itself:
+the pond, the woods, the buildings. They light up red, and the layout
+engine packs the tables around them automatically."
 
-**N4 (~8s):** "Extended by Mirror, Reflection's own agent, running on Beam.
+**N3b (~18s):** "Then the report tells you what you're actually
+building. Installed capacity, annual generation from solar radiation
+data, a performance ratio, and a bill of materials line by line:
+tables, posts, strings, inverters, cables, transformer. You can export
+the whole thing as a proposal."
+
+**N3c (~15s):** "The 3D preview builds real terrain, with satellite
+imagery on top, and the water and trees where the map says they are.
+Slide the time of day and you watch the sun cross the site, shadows
+sweeping the tables from morning to evening. You can see the exposure
+hour by hour."
+
+**N3d (~18s):** "And the whole thing is conversational. Ask Beam to
+reduce land use by twenty percent and you can watch it think: it picks
+the tools, runs the pipeline again, and repacks the site live. Ask it
+to just guess a number and it calls a tool instead."
+
+**N4 (~40s):** "There are three layers. A React and Cesium globe is
+the working map. A Three.js scene on real elevation data is the
+preview. And a FastAPI pipeline does the engineering: exclusions,
+yield, packing, electrical sizing, BOM. Beam sits on top in a true
+multi-turn tool-calling loop with six typed tools. It reads your
+request, reasons about it, picks a tool and its arguments, gets the
+result back, and decides what to do next. You can see its reasoning in
+the chat, step by step. And every number on screen came out of that
+pipeline. When Beam writes the proposal, it uses the same design
+data."
+
+**N5 (~12s):** "So a feasibility study that used to take weeks happens
+while you watch. BEAM for BOM, built on Beam, extended by Mirror.
 Links below."
 
 ## Captures
 
-- **C1 flythrough** — low over tables (~6s)
-- **C2 draw + exclusions** — clicks (2×) → pond/copse appear red → tables
-  pack around them (~8s)
-- **C3 3D preview** — sun slider shadow sweep (~5s)
-- **C4 chat** — "reduce land use 20%" reasoning trace + repack; then
-  "just guess" → calls a tool (~6s)
+- **C1 flythrough** — low over tables, the prettiest shot (~8s). Opens
+  under N1 the moment the face cut ends; reuse the tail under N5.
+- **C2 draw + exclusions** — clicks (2×) → pond/copse appear red →
+  tables pack around them (~8s). The "it found the pond itself" moment;
+  give it a beat of silence after the exclusions appear.
+- **C3 report** — ReportView scroll, slow enough to read: 1.50 MWp,
+  1,383 MWh/yr, PR 0.86, BOM line items; end on proposal export (~10s).
+- **C4 sun slider** — 3D preview, shadow sweep morning → evening (~8s).
+  The second wow moment; no narration overlap if possible.
+- **C5 Ask Beam chat** — "reduce land use 20%" reasoning trace + repack,
+  then "just guess X" → tool call (~12s). Two exchanges show two
+  strengths: multi-turn scoping and grounding. Film live mode only (the
+  offline-scripted label undercuts it). Two takes.
 
-## Graphs (HTML, OpenEdit renders)
+## Graphs / overlays (HTML, OpenEdit renders)
 
-- **G1 effort_cost.html** — during N3 first half
-- **G2 scoping_map.html** — during N3 second half (`electrical` pulses red)
-- **G3 end_card.html** — under N4
+- **G1 architecture.html** — N4 first half: two renderers + FastAPI
+  services + Beam endpoint + ledger. Slow pan/zoom, highlight each box
+  as it's named.
+- **G2 agent_loop.html** — N4 second half: user → Beam → tool calls →
+  pipeline → reply + reasoning. Animate along the arrows.
+- **G3 end_card.html** — under N5 tail.
 
 ## Bubble direction for OpenEdit
 
-- Circle crop, 2px amber border (#f59e0b), soft shadow, ~18% frame width.
-- Bottom-center or bottom-left preferred; the app's action is center-left
-  and the chat panel is on the right. Let the renderer see the captures
-  and pick.
+- Circle crop, 2px amber border (#f59e0b), soft shadow, ~18% frame
+  width.
+- Bottom-center or bottom-left preferred; the app's action is
+  center-left and the chat panel is on the right. Let the renderer see
+  the captures and pick.
 - Bubble ducks during the end card.
-- Film live mode only for C4 (the offline-scripted label undercuts it).
-  Two takes.
 - 9:16 vertical reframe as a second export.
 
-## Structure against the judging criteria
+## Pronunciation notes (French accent)
 
-- Model first: Beam named in line 1, effort/tool-calling/reasoning named
-  in N2 and N3.
-- Problem stated plainly in N2's first sentence.
-- What we did: the product demo (N2) and the measurement (N3), which is
-  the differentiator.
+- **BOM** — say "bomb" (/bɒm/), not the letters. The name is a pun; it
+  lands better spoken than spelled.
+- **Three.js** — "three-jay-ess". If "three" fights you, "a Three.js
+  scene" can become "a Three-JS scene" or just "a 3D scene built on
+  Three.js" → simplest fallback: "a Three.js scene" → "a Three-j-s
+  scene". Cut to "the 3D scene" if it still trips.
+- **FastAPI** — "fast-A-P-I", letters, easy pace.
+- **OpenStreetMap** — three clear words; say them separately.
+- **constraint / constraints** — the French 't' is silent in French;
+  in English say the full "kon-STRAINT". Used twice (N2, N3a); slow
+  down there.
+- **yield** — "yeeld", one syllable, not "weeld".
+- **exclusions** — "ex-KLOO-zhuns"; if it trips, swap in "the red
+  zones" (N4 only, N3a already describes them visually).
+- **world/terrain/megawatts** — watch the 'r': English 'r' is soft,
+  not rolled. "TERR-ayn", "MEG-ah-wotts".
+- **"three and a half thousand"** (N1) — the only th-cluster in a
+  number; if it trips, "nearly three thousand five hundred panels" is
+  no easier, so practice this phrase isolated before recording.
+- Removed already: "heightfield", "draped imagery", "GIS layers",
+  "PVGIS" (now "solar radiation data"), "copse" (now "the woods"),
+  "five-hundred-billion parameter" (now "biggest reasoning model" —
+  note: keep "five-hundred-billion" in captions/end card, just not
+  spoken).
+
+## Structure notes
+
+- Cold open lands the wow in the first 10 seconds with real numbers
+  from the demo site (145 tables, 3,480 modules, 1.5 MWp, BOM).
+- The demo is split into four labeled beats so each feature gets air
+  time: OSM exclusions, the report and BOM/proposal, the sun-exposure
+  study, and Ask Beam.
+- N4 is the Beam-strengths beat: six typed tools, multi-turn loop,
+  visible reasoning_content trace, grounding in pipeline output.
+- N3d's second exchange ("just guess a number" → tool call) is the
+  strongest single proof of grounding; keep it if cuts are needed.
+- Two silent-ish beats let footage breathe: exclusions appearing (C2),
+  shadow sweep (C4).
+- Tight ~90s cut if needed: merge 3a+3b, cut N4 to two sentences over
+  architecture.html only, keep N1 and N5 intact.
