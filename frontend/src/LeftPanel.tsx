@@ -45,7 +45,7 @@ export default function LeftPanel(p: Props) {
   return (
     <div className="flex flex-col gap-3 p-3 overflow-y-auto h-full">
       <div>
-        <h1 className="text-xl font-extrabold brand-text">BEAM for BOM: Solar Farm</h1>
+        <h1 className="text-xl font-extrabold brand-text">BEAM for BOM: Solar Farm Designer</h1>
         <p className="text-xs text-slate-400">Draw a boundary. Beam designs the solar farm and tells you what to buy.</p>
       </div>
 
@@ -137,7 +137,7 @@ export default function LeftPanel(p: Props) {
       </>)}
       <button onClick={p.onDemo}
         className="py-1.5 rounded text-xs bg-[#141a24] hover:bg-[#303139] text-slate-300">
-        Run demo scenario (Escrick Field, ~7 ha)
+        Run demo scenario (East York Water Field, ~10 ha)
       </button>
       <p className="text-[10px] text-slate-500 leading-snug">
         Demo only · preliminary feasibility estimate

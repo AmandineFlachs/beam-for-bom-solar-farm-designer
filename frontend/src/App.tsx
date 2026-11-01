@@ -45,7 +45,7 @@ export default function App() {
   const [started, setStarted] = useState(false)
   const [rightOpen, setRightOpen] = useState(true)
   const [leftOpen, setLeftOpen] = useState(true)
-  const [sunHour, setSunHour] = useState(15)
+  const [sunHour, setSunHour] = useState(9.5)
   const [sunPlaying, setSunPlaying] = useState(false)
   const [picked, setPicked] = useState<PickedInfo | null>(null)
 
@@ -113,7 +113,7 @@ export default function App() {
     setGenerating(false)
   }
 
-  // Demo: committed Escrick Field site + warm caches → works offline
+  // Demo: mapped East York water-field parcel + warm caches → works offline
   const runDemo = async () => {
     setGenerating(true); setError(null); setDesign(null); setPicked(null)
     try {
@@ -123,9 +123,11 @@ export default function App() {
       setBoundary(rings[0]); setParcels(rings.slice(1))
       setExclusions(site.exclusions); setPendingEx([])
       setSiteId(site_id)
-      flyTo(viewerRef.current, site.centroid.lon, site.centroid.lat, 2500)
-      // demo on a ~7 ha field: 1.2 MWp only fills a corner — size to the site
-      const demoA = { ...assumptions, target: { ...assumptions.target, target_dc_capacity_mwp: 4.0 } }
+      // nudge target slightly south so the site sits centered in the
+      // visible area (not low behind the bottom bar)
+      flyTo(viewerRef.current, site.centroid.lon, site.centroid.lat - 0.0012, 2500)
+      // Use the largest buildable design supported by the mapped site constraints.
+      const demoA = { ...assumptions, target: { ...assumptions.target, target_dc_capacity_mwp: 2.5 } }
       const d = await runDesign(site_id, demoA)
       if (d?.site?.centroid) {
         setView3d(true); setSunHour(9.5)
@@ -197,7 +199,7 @@ export default function App() {
         </button>
         {!leftOpen && (
           <div className="pointer-events-auto absolute top-0 left-0 panel px-3 py-2">
-            <div className="text-sm font-extrabold brand-text whitespace-nowrap">BEAM for BOM: Solar Farm</div>
+            <div className="text-sm font-extrabold brand-text whitespace-nowrap">BEAM for BOM: Solar Farm Designer</div>
           </div>
         )}
         <div className={`panel h-full overflow-hidden pointer-events-auto transition-transform duration-300 ${leftOpen ? '' : '-translate-x-[calc(100%+16px)]'}`}>
@@ -255,6 +257,7 @@ export default function App() {
         {preview3d && design && (
           <Scene3D design={design} tiltDeg={assumptions.array.tilt_degrees}
             azimuthDeg={assumptions.array.azimuth_degrees}
+            sunHour={sunHour} onSunHourChange={setSunHour}
             onClose={() => setPreview3d(false)} />
         )}
         {/* zoom controls */}
@@ -272,7 +275,7 @@ export default function App() {
             <input type="range" min={0} max={23.75} step={0.25} value={sunHour % 24}
               onChange={e => setSunHour(+e.target.value)}
               className="w-40 accent-yellow-400" />
-            <span className="text-[10px] text-slate-500">shading follows the sun</span>
+            <span className="text-[10px] text-slate-500">3D shadows update · satellite shadows are fixed</span>
           </div>
         )}
         {picked && (

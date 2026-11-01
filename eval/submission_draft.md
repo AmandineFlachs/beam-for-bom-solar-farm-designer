@@ -1,6 +1,10 @@
 # SUBMISSION DRAFT — post to https://huggingface.co/reflection/Beam-1.0-501B-A23B/discussions/5
 # Replace bracketed links before posting.
 
+Built for the **Build with Beam** challenge. The problem it tackles:
+first-pass site screening for utility-scale solar still takes weeks of
+manual GIS work per site, redone every time a constraint changes.
+
 **BEAM for BOM: draw a boundary on a satellite globe. Beam designs the
 solar farm, estimates the energy, writes the report, lets you walk the
 site in 3D, and answers questions while you watch it think. We also
@@ -37,13 +41,14 @@ A browser-based agentic solar-farm feasibility studio. You draw a land
 boundary on satellite imagery (single or multi-parcel), set assumptions,
 and Beam drives a deterministic engineering pipeline end to end:
 
-- Boundary: site + exclusions on Esri imagery; OSM auto-detects buildings,
+- Site screening: boundary on Esri imagery; OSM auto-detects buildings,
   water and woodland inside the boundary and excludes them
-- Energy: PVGIS yield estimate (hourly, cached), performance ratio,
-  specific yield
-- Array: deterministic fixed-tilt table packing with shading-derived row
-  pitch
-- Materials: strings, inverters, cables, transformer rules, full BOM
+- Solar resource: PVGIS yield estimate (hourly, cached), performance
+  ratio, specific yield
+- Array layout: deterministic fixed-tilt table packing with
+  shading-derived row pitch
+- Electrical + materials: strings, inverters, cables, transformer
+  rules, full BOM
 - Report: a one-screen design report (capacity, annual MWh, BOM line
   items) plus an exported Markdown/GeoJSON/CSV proposal with the
   narrative written by Beam, grounded in the design JSON

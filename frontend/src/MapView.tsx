@@ -224,8 +224,9 @@ export default function MapView({ drawMode, boundary, parcels = [], exclusions, 
   useEffect(() => {
     const v = viewerRef.current
     if (!v) return
-    // 15 June, sunHour UTC — long day, nice low evening angles
-    const t = Cesium.JulianDate.fromDate(new Date(Date.UTC(2025, 5, 15, Math.floor(sunHour), (sunHour % 1) * 60)))
+    // Show UK local clock time on a long June day; Cesium expects UTC.
+    const utcHour = (sunHour - 1 + 24) % 24
+    const t = Cesium.JulianDate.fromDate(new Date(Date.UTC(2025, 5, 15, Math.floor(utcHour), (utcHour % 1) * 60)))
     v.clock.currentTime = t
   }, [sunHour])
 
@@ -415,7 +416,8 @@ export default function MapView({ drawMode, boundary, parcels = [], exclusions, 
 
       // 3. OSM features — buildings extruded in 3D, trees on woodland
       // heights: 0 on the flat globe, sampled real surface on photoreal tiles
-      const autoF = (t?.auto_exclusions ?? []).filter((f: any) =>
+      const allAutoF = t?.auto_exclusions ?? []
+      const autoF = allAutoF.filter((f: any) =>
         f.geometry.type === 'Polygon' && f.geometry.coordinates[0]?.length >= 3)
       const bHeights = await sampleGround(autoF.map((f: any) => {
         const [lon, lat] = f.geometry.coordinates[0][0]
@@ -429,10 +431,14 @@ export default function MapView({ drawMode, boundary, parcels = [], exclusions, 
           const kindLabels: Record<string, string> = {
             building: 'Building', wood: 'Woodland', water: 'Water body',
           }
+          const osmColor = f.kind === 'water'
+            ? Cesium.Color.fromCssColorString('#1682a4')
+            : f.kind === 'wood' ? GREEN : BRICK
           const ent = ds.entities.add({
             polygon: {
               hierarchy: new Cesium.PolygonHierarchy(Cesium.Cartesian3.fromDegreesArray(g.coordinates[0].flat())),
-              material: view3d ? BRICK.withAlpha(0.9) : RED.withAlpha(0.35),
+              material: view3d ? osmColor.withAlpha(0.88)
+                : (f.kind === 'water' || f.kind === 'wood' ? osmColor.withAlpha(0.45) : RED.withAlpha(0.35)),
               height: view3d ? ground : 0,
               extrudedHeight: view3d ? ground + (f.kind === 'building' ? 7 : 0) : 0,
               shadows: view3d ? Cesium.ShadowMode.ENABLED : Cesium.ShadowMode.DISABLED,
@@ -442,13 +448,15 @@ export default function MapView({ drawMode, boundary, parcels = [], exclusions, 
             kind: kindLabels[f.kind] ?? 'Auto-exclusion', id: `osm-${f.kind}`,
             lines: [
               { k: 'Source', v: 'OpenStreetMap auto-detection' },
-              { k: 'Effect', v: 'Panels kept out, with buffer' },
+              { k: 'Effect', v: f.context
+                ? 'Nearby site context; outside the project boundary'
+                : 'Excluded from panels with a setback buffer' },
             ],
           }
           if (!view3d) ds.entities.add({
             polyline: {
               positions: Cesium.Cartesian3.fromDegreesArray([...g.coordinates[0], g.coordinates[0][0]].flat()),
-              width: 1.5, material: RED, clampToGround: true,
+              width: 1.5, material: osmColor, clampToGround: true,
             },
           })
           // trees on woodland polygons (in 3D: billboards scattered inside)
@@ -466,6 +474,33 @@ export default function MapView({ drawMode, boundary, parcels = [], exclusions, 
           }
         }
       })
+      // Roads are LineStrings, not polygons. Keep them visible as explicit
+      // OSM constraints instead of silently dropping them from the map.
+      for (const f of allAutoF.filter((item: any) =>
+        item.kind === 'road' && item.geometry.type === 'LineString')) {
+        const coords: number[][] = f.geometry.coordinates
+        const heights = view3d ? await sampleGround(coords.map(([lon, lat]) => ({ lon, lat }))) : []
+        if (cancelled) return
+        const positions = view3d
+          ? Cesium.Cartesian3.fromDegreesArrayHeights(
+              coords.flatMap(([lon, lat], i) => [lon, lat, (heights[i] ?? 0) + 0.35]))
+          : Cesium.Cartesian3.fromDegreesArray(coords.flat())
+        const ent = ds.entities.add({
+          polyline: {
+            positions, width: f.context ? 3 : 6,
+            material: f.context ? Cesium.Color.fromCssColorString('#8a8175') :
+              Cesium.Color.fromCssColorString('#ef6a45'),
+            clampToGround: !view3d,
+          },
+        })
+        ;(ent as any).beamInfo = {
+          kind: 'Road constraint', id: f.id,
+          lines: [
+            { k: 'Source', v: 'OpenStreetMap' },
+            { k: 'Effect', v: `No-panel setback · ${f.buffer_m ?? 6} m` },
+          ],
+        }
+      }
 
       // 4. PV tables — sloped faces snapped to terrain, staggered reveal
       const tables: any[] = l?.tables ?? []
@@ -664,8 +699,9 @@ export function frameSite3d(viewer: Cesium.Viewer | null, ring: number[][]) {
   )
   const h = Math.min(Math.max(spanM * 1.7, 380), 20000)
   viewer.camera.flyTo({
-    // aim slightly south of centre so the pitched view keeps the whole site
-    destination: Cesium.Cartesian3.fromDegrees(cLon, cLat - (h * 0.55) / mLat, h),
+    // aim well south of centre — the pitched view then places the site in
+    // the upper half of the frame, clear of the bottom bar
+    destination: Cesium.Cartesian3.fromDegrees(cLon, cLat - (h * 0.85) / mLat, h),
     orientation: { pitch: Cesium.Math.toRadians(-50) },
     duration: 2.8,
     complete: () => viewer.camera.moveRight(spanM * 0.12),

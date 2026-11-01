@@ -15,6 +15,8 @@ interface Props {
   design: Design
   tiltDeg: number
   azimuthDeg: number
+  sunHour: number
+  onSunHourChange: (hour: number) => void
   onClose: () => void
 }
 
@@ -48,11 +50,11 @@ const GradeShader = {
 /** Photoreal 3D preview of the designed farm, built entirely from our own
  * design data: heightfield from terrain grid, tilted panels, OSM buildings,
  * trees, fence, equipment, neighbouring field parcels. All local metres. */
-export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props) {
+export default function Scene3D({ design, tiltDeg, azimuthDeg, sunHour, onSunHourChange, onClose }: Props) {
   const mountRef = useRef<HTMLDivElement>(null)
-  const [sunHour, setSunHour] = useState(9.5)
-  const api_ = useRef<{ setSun: (h: number) => void; enter: () => void } | null>(null)
+  const api_ = useRef<{ setSun: (h: number) => void; enter: () => void; overview: () => void } | null>(null)
   const [locked, setLocked] = useState(false)
+  const [walking, setWalking] = useState(false)
   const [insp, setInsp] = useState<{ label: string; sub?: string } | null>(null)
   const inspRef = useRef(insp)
   inspRef.current = insp
@@ -171,20 +173,175 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
     controls.addEventListener('unlock', () => setLocked(false))
 
     const EYE = 1.7
+    let contextBuildingFocus: [number, number] | null = null
+    let walkTargetFocus: [number, number] | null = null
     const spawn = ((): [number, number] => {
+      const contextBuildings = (t?.auto_exclusions ?? [])
+        .filter((f: any) => f.kind === 'building' && f.geometry?.type === 'Polygon')
+        .map((f: any) => {
+          const ring = f.geometry.coordinates[0] as number[][]
+          const lon = ring.reduce((sum, p) => sum + p[0], 0) / ring.length
+          const lat = ring.reduce((sum, p) => sum + p[1], 0) / ring.length
+          const [x, z] = toXY(lon, lat)
+          return { x, z }
+        })
+      const ptInSite = (x: number, z: number) => bnds.some(ring => {
+        let inside = false
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+          const [xi, zi] = ring[i], [xj, zj] = ring[j]
+          if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) inside = !inside
+        }
+        return inside
+      })
+      const tableRings: [number, number][][] = (l?.tables ?? []).map((table: any) =>
+        (table.geometry.coordinates[0] as number[][]).map(([lon, lat]) => toXY(lon, lat)))
+      if (tableRings.length) {
+        const vertices = tableRings.flat()
+        const minTableX = Math.min(...vertices.map(p => p[0]))
+        const maxTableX = Math.max(...vertices.map(p => p[0]))
+        const southZ = Math.min(...vertices.map(p => p[1])) - 12
+        const target: [number, number] = [
+          (minTableX + maxTableX) / 2,
+          vertices.reduce((sum, p) => sum + p[1], 0) / vertices.length,
+        ]
+        const ringDistance = (x: number, z: number, ring: [number, number][], closed: boolean) => {
+          let inside = false, bestSq = Infinity
+          const closedRing = closed && (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1])
+          const edges = closedRing ? ring.length : ring.length - 1
+          for (let i = 0; i < edges; i++) {
+            const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length]
+            const dx = bx - ax, dz = bz - az
+            const q = THREE.MathUtils.clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1), 0, 1)
+            bestSq = Math.min(bestSq, (x - ax - dx * q) ** 2 + (z - az - dz * q) ** 2)
+            if (closed && (az > z) !== (bz > z) && x < (bx - ax) * (z - az) / (bz - az) + ax) inside = !inside
+          }
+          return inside ? 0 : Math.sqrt(bestSq)
+        }
+        const obstacles = [
+          ...(site.exclusions ?? []).map((ex: any) => ({
+            ring: (ex.geometry.coordinates[0] as number[][]).map(([lon, lat]) => toXY(lon, lat)),
+            buffer: 0, closed: true,
+          })),
+          ...(t?.auto_exclusions ?? []).filter((f: any) => !f.context).map((f: any) => ({
+            ring: (f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates)
+              .map(([lon, lat]: number[]) => toXY(lon, lat)),
+            buffer: f.buffer_m ?? 0, closed: f.geometry.type === 'Polygon',
+          })),
+        ]
+        const openSouthSpawns: { x: number; clearance: number }[] = []
+        for (let x = minTableX - 20; x <= maxTableX + 20; x += 2) {
+          if (!ptInSite(x, southZ)) continue
+          const panelClearance = Math.min(...tableRings.map(r => ringDistance(x, southZ, r, true)))
+          if (panelClearance < 8) continue
+          const zoneClearance = obstacles.length
+            ? Math.min(...obstacles.map(o => ringDistance(x, southZ, o.ring, o.closed) - o.buffer))
+            : Infinity
+          if (zoneClearance < 5) continue
+          openSouthSpawns.push({ x, clearance: Math.min(panelClearance, zoneClearance) })
+        }
+        if (openSouthSpawns.length) {
+          openSouthSpawns.sort((a, b) => Math.abs(a.x - target[0]) - Math.abs(b.x - target[0]))
+          walkTargetFocus = target
+          return [openSouthSpawns[0].x, southZ]
+        }
+      }
+      // when a building sits inside the parcel, spawn relative to it —
+      // otherwise a neighbouring context building just outside the fence
+      // can win "nearest" and park the camera between the two
+      const insideBlds = contextBuildings.filter((b: { x: number; z: number }) => ptInSite(b.x, b.z))
+      const spawnBlds = insideBlds.length ? insideBlds : contextBuildings
+      let nearest: { x: number; z: number; bx: number; bz: number; distance: number; tx: number; tz: number } | null = null
+      for (const building of spawnBlds) {
+        for (const ring of bnds) {
+          for (let i = 0; i < ring.length; i++) {
+            const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length]
+            const dx = bx - ax, dz = bz - az
+            const q = THREE.MathUtils.clamp(((building.x - ax) * dx + (building.z - az) * dz) /
+              (dx * dx + dz * dz || 1), 0, 1)
+            const x = ax + dx * q, z = az + dz * q
+            const distance = Math.hypot(building.x - x, building.z - z)
+            if (!nearest || distance < nearest.distance)
+              nearest = { x, z, bx: building.x, bz: building.z, distance,
+                tx: dx / (Math.hypot(dx, dz) || 1), tz: dz / (Math.hypot(dx, dz) || 1) }
+          }
+        }
+      }
+      if (nearest && nearest.distance < 250) {
+        contextBuildingFocus = [nearest.bx, nearest.bz]
+        const dx = nearest.bx - nearest.x, dz = nearest.bz - nearest.z
+        const distance = Math.hypot(dx, dz) || 1
+        const buildingInside = bnds.some(ring => {
+          let inside = false
+          for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const [xi, zi] = ring[i], [xj, zj] = ring[j]
+            if ((zi > nearest!.bz) !== (zj > nearest!.bz) &&
+                nearest!.bx < (xj - xi) * (nearest!.bz - zi) / (zj - zi) + xi) inside = !inside
+          }
+          return inside
+        })
+        const inSite = (x: number, z: number) => bnds.some(ring => {
+          let inside = false
+          for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const [xi, zi] = ring[i], [xj, zj] = ring[j]
+            if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) inside = !inside
+          }
+          return inside
+        })
+        const clearOfBuildings = (x: number, z: number) =>
+          contextBuildings.every((b: { x: number; z: number }) => Math.hypot(b.x - x, b.z - z) > 30)
+        if (buildingInside) {
+          // stand inside the main field, part-way from the corridor mouth
+          // toward the parcel centroid, looking back at the building —
+          // standing between the farm buildings puts the camera under an eave
+          const ring0 = bnds[0]
+          const ccx = ring0.reduce((s, p) => s + p[0], 0) / ring0.length
+          const ccz = ring0.reduce((s, p) => s + p[1], 0) / ring0.length
+          const opts: [number, number][] = []
+          for (const t of [0.15, 0.25, 0.4, 0.6])
+            for (const side of [0, 1, -1])
+              opts.push([nearest.x + (ccx - nearest.x) * t + nearest.tx * side * 15,
+                nearest.z + (ccz - nearest.z) * t + nearest.tz * side * 15])
+          let best: [number, number] | null = null, bestClear = 0
+          for (const [x, z] of opts) {
+            if (!inSite(x, z)) continue
+            const clear = Math.min(...contextBuildings.map((b: { x: number; z: number }) =>
+              Math.hypot(b.x - x, b.z - z)))
+            if (clear > bestClear) { bestClear = clear; best = [x, z] }
+          }
+          if (best && bestClear > 14) return best
+        }
+        const inwardX = -dx / distance, inwardZ = -dz / distance
+        const candidates: [number, number][] = [-1, 1].map(side => [
+          nearest!.x + inwardX * 8 + nearest!.tx * side * 40,
+          nearest!.z + inwardZ * 8 + nearest!.tz * side * 40,
+        ])
+        const spawnAlongEdge = candidates.find(([x, z]) => inSite(x, z) && clearOfBuildings(x, z))
+        if (spawnAlongEdge) return spawnAlongEdge
+        // Start just inside the field opposite the nearby farmstead, looking
+        // across the boundary so the building and its shadow are visible.
+        return [nearest.x + inwardX * 8, nearest.z + inwardZ * 8]
+      }
       if (e?.transformer_point) {
-        // stand ~10 m from the kiosk toward the site centre — spawning ON the
+        // stand clear of the kiosk and just off the access track — spawning ON the
         // transformer point puts the camera inside the equipment
         const [tx, tz] = toXY(e.transformer_point.lon, e.transformer_point.lat)
         const d = Math.hypot(tx, tz) || 1
-        return [tx - (tx / d) * 10, tz - (tz / d) * 10]
+        const sideX = -tz / d, sideZ = tx / d
+        return [tx - (tx / d) * 22 + sideX * 5, tz - (tz / d) * 22 + sideZ * 5]
       }
       return [(minX + maxX) / 2, minZ + 15]
     })()
     const keys = new Set<string>()
     let vel = new THREE.Vector3(), vy = 0, airborne = false
+    let walkMode = false
+    let activateWalkMode = () => {}
+    const walkKeys = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'])
     const onKeyDown = (ev: KeyboardEvent) => {
       if (ev.code === 'Escape') return
+      if (walkKeys.has(ev.code)) {
+        ev.preventDefault()
+        activateWalkMode()
+      }
       keys.add(ev.code)
       if (ev.code === 'Space' && !airborne) { vy = 5.5; airborne = true }
     }
@@ -193,7 +350,13 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
     window.addEventListener('keyup', onKeyUp)
     // drag-look fallback when pointer lock is unavailable/denied
     let dragLook = false, lastMX = 0, lastMY = 0, yaw = 0, pitch = 0
-    const onMDown = (e: MouseEvent) => { if (!controls.isLocked) { dragLook = true; lastMX = e.clientX; lastMY = e.clientY } }
+    const onMDown = (e: MouseEvent) => {
+      if (!controls.isLocked) {
+        activateWalkMode()
+        try { controls.lock() } catch { /* drag-look fallback */ }
+        dragLook = true; lastMX = e.clientX; lastMY = e.clientY
+      }
+    }
     const onMMove = (e: MouseEvent) => {
       if (!dragLook || controls.isLocked) return
       yaw -= (e.clientX - lastMX) * 0.003; pitch -= (e.clientY - lastMY) * 0.003
@@ -237,6 +400,20 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
     skyTex.colorSpace = THREE.SRGBColorSpace
     scene.background = skyTex
     scene.backgroundIntensity = 0.95
+    const clouds: THREE.Sprite[] = []
+    const smoothstep = (a: number, b: number, x: number) => {
+      const t = THREE.MathUtils.clamp((x - a) / (b - a), 0, 1)
+      return t * t * (3 - 2 * t)
+    }
+    const mixColor = (a: number, b: number, t: number) =>
+      new THREE.Color(a).lerp(new THREE.Color(b), t).getStyle()
+    let daylight = 1
+    const treeShadows: { mesh: THREE.Mesh; x: number; z: number; radius: number; height: number }[] = []
+    const nightTintMaterials: { color: THREE.Color }[] = []
+    const waterMaterials: { color: THREE.Color }[] = []
+    const shadeMat = new THREE.MeshBasicMaterial({
+      color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false,
+    })
 
     const sun = new THREE.DirectionalLight(0xfff4e0, 3)
     sun.castShadow = true
@@ -250,17 +427,97 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
     scene.add(hemi)
     const amb = new THREE.AmbientLight(0x404860, 0.25)
     scene.add(amb)
+    const starPositions: number[] = []
+    const starCount = 180
+    for (let i = 0; i < starCount; i++) {
+      const y = 1 - 2 * (i + 0.5) / starCount
+      const radius = Math.sqrt(1 - y * y)
+      const angle = i * 2.399963
+      starPositions.push(Math.cos(angle) * radius * 3000, y * 3000, Math.sin(angle) * radius * 3000)
+    }
+    const starGeometry = new THREE.BufferGeometry()
+    starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3))
+    const starMaterial = new THREE.PointsMaterial({
+      color: 0xffffff, size: 2.2, sizeAttenuation: false, transparent: true,
+      opacity: 0, depthWrite: false, toneMapped: false,
+    })
+    const stars = new THREE.Points(starGeometry, starMaterial)
+    stars.frustumCulled = false
+    scene.add(stars)
 
     const setSun = (h: number) => {
-      const frac = (h - 6) / 15
-      const elev = Math.max(Math.sin(frac * Math.PI), 0.02)
-      const azim = Math.PI * (0.15 + 0.7 * frac)
+      const frac = THREE.MathUtils.clamp((h - 5) / 16, 0, 1)
+      const elev = Math.max(Math.sin(frac * Math.PI), 0)
+      daylight = smoothstep(5, 7.5, h) * (1 - smoothstep(19, 21.5, h))
+      const azim = Math.PI * (0.12 + 0.76 * frac)
       sun.position.setFromSphericalCoords(900, Math.PI / 2 - Math.asin(elev), azim + Math.PI)
-      sun.intensity = h < 6.5 || h > 20 ? 0.15 : 2.0 + elev * 1.2
-      hemi.intensity = h < 6.5 || h > 20 ? 0.12 : 0.55
-      amb.intensity = h < 6.5 || h > 20 ? 0.1 : 0.25
-      sun.color.set(h < 8 || h > 17 ? 0xffd2a0 : 0xfff4e0)
-      bloom.strength = h < 7 || h > 18.5 ? 0.18 : 0.08
+      sun.intensity = daylight * (2.1 + elev * 1.4)
+      hemi.intensity = 0.08 + daylight * 0.47
+      amb.intensity = 0.025 + daylight * 0.225
+      hemi.color.set(mixColor(0x233651, 0xbdd6f0, daylight))
+      hemi.groundColor.set(mixColor(0x101721, 0x54643f, daylight))
+      sun.color.set(h < 8 || h > 17 ? 0xffc18a : 0xfff4e0)
+      scene.environmentIntensity = 0.12 + daylight * 0.88
+      scene.backgroundIntensity = 0.12 + daylight * 0.83
+      starMaterial.opacity = (1 - daylight) * 0.95
+
+      const twilight = Math.max(smoothstep(4.8, 6.8, h) * (1 - smoothstep(7, 8, h)),
+        smoothstep(18, 19, h) * (1 - smoothstep(20, 21.5, h)))
+      const nightTop = 1 - daylight
+      const top = mixColor(0x3f6ea6, 0x07111f, nightTop)
+      const middle = mixColor(0x8ab1d4, 0x172a42, nightTop)
+      const horizon = mixColor(0xe9edf0, 0x29394c, nightTop)
+      const dusk = new THREE.Color(0xf29b63)
+      sg.clearRect(0, 0, skyCv.width, skyCv.height)
+      const skyGrad = sg.createLinearGradient(0, 0, 0, 256)
+      skyGrad.addColorStop(0, top)
+      skyGrad.addColorStop(0.55, middle)
+      skyGrad.addColorStop(0.78, new THREE.Color(horizon).lerp(dusk, twilight * 0.55).getStyle())
+      skyGrad.addColorStop(1, new THREE.Color(horizon).lerp(dusk, twilight * 0.8).getStyle())
+      sg.fillStyle = skyGrad
+      sg.fillRect(0, 0, skyCv.width, skyCv.height)
+      if (nightTop > 0.2) {
+        for (let i = 0; i < 110; i++) {
+          const x = (i * 73.17) % skyCv.width
+          const y = (i * 47.31) % 185
+          sg.globalAlpha = nightTop * (0.35 + (i % 5) * 0.12)
+          sg.fillStyle = '#ffffff'
+          sg.fillRect(x, y, i % 7 === 0 ? 1.5 : 1, i % 7 === 0 ? 1.5 : 1)
+        }
+        sg.globalAlpha = 1
+      }
+      skyTex.needsUpdate = true
+      for (const cloud of clouds) {
+        const material = cloud.material as THREE.SpriteMaterial
+        material.color.set(mixColor(0x51647a, 0xffffff, daylight))
+        material.opacity = 0.08 + daylight * 0.52
+      }
+      for (const material of nightTintMaterials)
+        material.color.set(mixColor(0x18283b, 0xffffff, daylight))
+      for (const material of waterMaterials)
+        material.color.set(mixColor(0x082b45, 0x1682c4, daylight))
+      const horizontal = Math.hypot(sun.position.x, sun.position.z) || 1
+      const shadowX = -sun.position.x / horizontal
+      const shadowZ = -sun.position.z / horizontal
+      const sunElevation = Math.atan2(Math.max(0, sun.position.y), horizontal)
+      shadeMat.opacity = 0.24 * daylight
+      for (const shadow of treeShadows) {
+        const length = THREE.MathUtils.clamp(
+          shadow.height / Math.max(Math.tan(sunElevation), 0.16),
+          shadow.radius * 1.5, 14,
+        )
+        shadow.mesh.position.set(
+          shadow.x + shadowX * length * 0.45,
+          elevAt(shadow.x, shadow.z) - baseElev + 0.07,
+          shadow.z + shadowZ * length * 0.45,
+        )
+        shadow.mesh.rotation.set(-Math.PI / 2, Math.atan2(shadowX, shadowZ), 0)
+        shadow.mesh.scale.set(1, 1, length / (shadow.radius * 2))
+      }
+      sun.updateMatrixWorld()
+      sun.target.updateMatrixWorld()
+      sun.shadow.needsUpdate = true
+      bloom.strength = 0.04 + (1 - daylight) * 0.08 + twilight * 0.08
     }
     setSun(sunHour)
 
@@ -413,7 +670,7 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
     const elevRaw = elevAt
     // base elevation: first finite sample near the centre — if the grid/DEM is
     // broken there may be no finite value at all; fall back to 0
-    let baseElev0 = 0
+    let baseElev0 = Number.NaN
     for (let r = 0; r <= 60 && !Number.isFinite(baseElev0); r += 10) {
       const h = elevRaw(r, 0)
       if (Number.isFinite(h)) baseElev0 = h
@@ -423,7 +680,8 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
     // junk data (DEM miss / sparse-grid hole) and renders as a spike
     let loH = baseElev0, hiH = baseElev0
     for (const c of elevGrid) if (Number.isFinite(c.h)) { loH = Math.min(loH, c.h); hiH = Math.max(hiH, c.h) }
-    loH -= 15; hiH += 15
+    const elevationMargin = Math.max(3, Math.min(8, (hiH - loH) * 1.25))
+    loH -= elevationMargin; hiH += elevationMargin
     elevAt = (x: number, z: number) => {
       const h = elevRaw(x, z)
       return Number.isFinite(h) && h >= loH && h <= hiH ? h : baseElev0
@@ -530,7 +788,7 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
     // earth instead of a floating surface (Terrain Studio's chunk skirts)
     {
       const gw = ground.geometry.attributes.position
-      const W = SEG + 1, DRO = 45
+      const W = SEG + 1, DRO = 5
       const skirt: number[] = []
       const pushEdge = (rowCol: (k: number) => number) => {
         for (let k = 0; k < SEG; k++) {
@@ -661,50 +919,6 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
       }
     } catch { /* labels optional */ }
 
-    // ---- floating KPI chips (digital-twin dashboard cards) ----
-    const chips: { pos: THREE.Vector3; el: HTMLDivElement }[] = []
-    const chip = (pos: THREE.Vector3, title: string, value: string, sub?: string) => {
-      const el = document.createElement('div')
-      el.style.cssText = 'position:absolute;transform:translate(-50%,-100%);pointer-events:none;'
-        + 'background:rgba(10,14,20,.85);border:1px solid rgba(255,255,255,.14);border-radius:8px;'
-        + 'padding:7px 12px;font-family:monospace;backdrop-filter:blur(4px)'
-      el.innerHTML = `<div style="font-size:9px;color:#8b95a5;letter-spacing:.08em">${title}</div>`
-        + `<div style="font-size:15px;font-weight:700;color:#fff;line-height:1.1">${value}</div>`
-        + (sub ? `<div style="font-size:9px;color:#d9822b">${sub}</div>` : '')
-      mount.appendChild(el)
-      chips.push({ pos, el })
-    }
-    try {
-      const l = design.layout, y0 = (design as any).yield
-      chip(new THREE.Vector3(0, Math.max(...pads.map((t: { g: number }) => t.g)) - baseElev + 3.5, 0),
-        'DC CAPACITY', `${((l?.dc_capacity_kwp ?? 0) / 1000).toFixed(2)} MWp`, `${l?.table_count ?? 0} tables`)
-      if (e?.transformer_point) {
-        const [tx, tz] = toXY(e.transformer_point.lon, e.transformer_point.lat)
-        chip(new THREE.Vector3(tx, elevAt(tx, tz) - baseElev + 5.5, tz),
-          'GRID EXPORT', `${e.transformer_kva ?? '—'} kVA`, e.ac_cable_spec ?? '')
-      }
-      if (e?.inverter_points?.[0]) {
-        const [ix, iz] = toXY(e.inverter_points[0].lon, e.inverter_points[0].lat)
-        chip(new THREE.Vector3(ix, elevAt(ix, iz) - baseElev + 4, iz),
-          'INVERTERS', `${e.inverter_count ?? e.inverter_points.length}× ${e.inverter_points[0].capacity_kw ?? 250} kW`)
-      }
-      if (y0?.annual_energy_mwh)
-        chip(new THREE.Vector3(spawn[0], elevAt(spawn[0], spawn[1]) - baseElev + 6, spawn[1]),
-          'ANNUAL YIELD', `${Math.round(y0.annual_energy_mwh)} MWh`, `${y0.capacity_factor_percent ?? ''}% CF`)
-    } catch { /* chips optional */ }
-    const projV = new THREE.Vector3()
-    const updateChips = () => {
-      for (const { pos, el } of chips) {
-        projV.copy(pos).project(camera)
-        const vis = projV.z < 1 && Math.abs(projV.x) < 1.1 && Math.abs(projV.y) < 1.1
-        el.style.display = vis ? 'block' : 'none'
-        if (vis) {
-          el.style.left = `${(projV.x * 0.5 + 0.5) * mount.clientWidth}px`
-          el.style.top = `${(-projV.y * 0.5 + 0.5) * mount.clientHeight}px`
-        }
-      }
-    }
-
     // ---- inspection registry: crosshair raycast → HUD label ----
     const inspectables: THREE.Object3D[] = []
     const tags = new Map<THREE.Object3D, { label: string; sub?: string; instId?: (i: number) => { label: string; sub?: string } }>()
@@ -784,6 +998,7 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
     // ---- colliders for first-person movement ----
     // circles (trees) + rotated rects (PV tables) — aisles stay walkable
     const colliders: { x: number; z: number; r: number }[] = []
+    const waterZones: [number, number][][] = []
     const rects = pads.map((p: { cx: number; cz: number; w: number; d: number }) => ({ cx: p.cx, cz: p.cz, w: p.w + 0.5, d: p.d + 0.5 }))
     const resolveColliders = (p: THREE.Vector3) => {
       for (const c of colliders) {
@@ -815,57 +1030,216 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
           p.z = r.cz - nlx * Math.sin(azRot) + nlz * Math.cos(azRot)
         }
       }
+      for (const ring of waterZones) {
+        let inside = false, best = Infinity, edgeX = 0, edgeZ = 0
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+          const [xi, zi] = ring[i], [xj, zj] = ring[j]
+          if ((zi > p.z) !== (zj > p.z) &&
+              p.x < (xj - xi) * (p.z - zi) / (zj - zi) + xi) inside = !inside
+          const dx = xj - xi, dz = zj - zi
+          const q = THREE.MathUtils.clamp(((p.x - xi) * dx + (p.z - zi) * dz) /
+            (dx * dx + dz * dz || 1), 0, 1)
+          const qx = xi + dx * q, qz = zi + dz * q
+          const distance = Math.hypot(p.x - qx, p.z - qz)
+          if (distance < best) { best = distance; edgeX = qx; edgeZ = qz }
+        }
+        if (inside) {
+          const dx = p.x - edgeX, dz = p.z - edgeZ
+          const d = Math.hypot(dx, dz) || 1
+          p.x = edgeX - dx / d * 0.8
+          p.z = edgeZ - dz / d * 0.8
+        }
+      }
     }
 
     // tree sprites shared by OSM woodland + user-drawn copse
     const treeMats = treeTexs.map(t => new THREE.SpriteMaterial({
       map: t, alphaTest: 0.45, transparent: false }))
-    const shadeMat = new THREE.MeshBasicMaterial({
-      color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false })
+    nightTintMaterials.push(...treeMats)
     try {
     // ---- OSM buildings (pitched-roof) + woodland trees ----
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0xcfc4b4, roughness: 0.9 })
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x6e4a38, roughness: 0.8 })
-    const wallCtx = new THREE.MeshStandardMaterial({ color: 0xb5ab9c, roughness: 0.95 })
-    const roofCtx = new THREE.MeshStandardMaterial({ color: 0x7a6a58, roughness: 0.9 })
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0xcfc4b4, roughness: 0.9, side: THREE.DoubleSide })
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x6e4a38, roughness: 0.8, side: THREE.DoubleSide })
+    const wallCtx = new THREE.MeshStandardMaterial({ color: 0xb5ab9c, roughness: 0.95, side: THREE.DoubleSide })
+    const roofCtx = new THREE.MeshStandardMaterial({ color: 0x7a6a58, roughness: 0.9, side: THREE.DoubleSide })
+    const exclusionMat = new THREE.MeshBasicMaterial({
+      color: 0xd95b42, transparent: true, opacity: 0.22, side: THREE.DoubleSide,
+      depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1,
+    })
+    const roadMat = new THREE.MeshStandardMaterial({
+      color: 0x62696a, roughness: 1, side: THREE.DoubleSide,
+    })
+    const waterMat = new THREE.MeshBasicMaterial({
+      color: 0x1682c4, transparent: true, opacity: 0.96, side: THREE.DoubleSide,
+      depthWrite: false, toneMapped: false,
+    })
+    waterMaterials.push(waterMat)
+    const insideSite = (x: number, z: number) => bnds.some(ring => {
+      let inside = false
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [xi, zi] = ring[i], [xj, zj] = ring[j]
+        if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) inside = !inside
+      }
+      return inside
+    })
+    const siteEdgeDistance = (x: number, z: number) => {
+      let best = Infinity
+      for (const ring of bnds) {
+        for (let i = 0; i < ring.length; i++) {
+          const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length]
+          const dx = bx - ax, dz = bz - az
+          const q = THREE.MathUtils.clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1), 0, 1)
+          best = Math.min(best, Math.hypot(x - (ax + dx * q), z - (az + dz * q)))
+        }
+      }
+      return best
+    }
+    let roadConstraintLabelAdded = false
     for (const f of t?.auto_exclusions ?? []) {
       const g = f.geometry
+      if (f.kind === 'road' && g.type === 'LineString') {
+        const rawRoadPts: [number, number][] = g.coordinates.map(([lon, lat]: number[]) => toXY(lon, lat))
+        const roadPts: [number, number][] = []
+        if (!f.context) {
+          for (let i = 0; i < rawRoadPts.length - 1; i++) {
+            const a = rawRoadPts[i], b = rawRoadPts[i + 1]
+            const len = Math.hypot(b[0] - a[0], b[1] - a[1])
+            const steps = Math.max(1, Math.ceil(len / 3))
+            for (let j = 0; j <= steps; j++) {
+              const q = j / steps
+              const p: [number, number] = [a[0] + (b[0] - a[0]) * q, a[1] + (b[1] - a[1]) * q]
+              if (insideSite(p[0], p[1]) ||
+                  siteEdgeDistance(p[0], p[1]) <= (f.buffer_m ?? 6) + 3) roadPts.push(p)
+            }
+          }
+        } else {
+          roadPts.push(...rawRoadPts.filter(([x, z]) =>
+            x >= minX && x <= maxX && z >= minZ && z <= maxZ))
+        }
+        if (roadPts.length < 2) continue
+        const addRibbon = (width: number, lift: number, material: THREE.Material) => {
+          const positions: number[] = [], indices: number[] = []
+          for (let i = 0; i < roadPts.length - 1; i++) {
+            const [x1, z1] = roadPts[i], [x2, z2] = roadPts[i + 1]
+            const len = Math.hypot(x2 - x1, z2 - z1)
+            if (len < 0.5) continue
+            const ux = (x2 - x1) / len, uz = (z2 - z1) / len
+            const px = -uz, pz = ux
+            const steps = Math.max(2, Math.ceil(len / 3))
+            for (let j = 0; j < steps; j++) {
+              const a = j / steps, b = (j + 1) / steps
+              const base = positions.length / 3
+              for (const q of [a, b]) {
+                const x = x1 + (x2 - x1) * q, z = z1 + (z2 - z1) * q
+                for (const side of [-1, 1]) {
+                  const vx = x + px * side * width / 2
+                  const vz = z + pz * side * width / 2
+                  positions.push(vx, elevAt(vx, vz) - baseElev + lift, vz)
+                }
+              }
+              indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2)
+            }
+          }
+          const geometry = new THREE.BufferGeometry()
+          geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+          geometry.setIndex(indices)
+          geometry.computeVertexNormals()
+          const mesh = new THREE.Mesh(geometry, material)
+          mesh.receiveShadow = true
+          scene.add(mesh)
+          return mesh
+        }
+        if (!f.context) addRibbon(Math.max(12, (f.buffer_m ?? 6) * 2 + 4), 0.06, exclusionMat)
+        const road = addRibbon(f.context ? 3.2 : 4.2, 0.14, roadMat)
+        tag(road, f.id ?? 'ROAD', `OSM road · ${f.context ? 'nearby context' : `${f.buffer_m ?? 6} m no-panel buffer`}`)
+        if (!f.context && roadPts.length && !roadConstraintLabelAdded) {
+          roadConstraintLabelAdded = true
+          const mid = roadPts[Math.floor(roadPts.length / 2)]
+          groundLabel(`ROAD RESERVE · ${f.buffer_m ?? 6} m`, mid[0], mid[1], 24)
+        }
+        continue
+      }
       if (g.type !== 'Polygon') continue
       const pts: THREE.Vector2[] = g.coordinates[0].map(([lo, la]: number[]) => new THREE.Vector2(...toXY(lo, la) as [number, number]))
       const minx = Math.min(...pts.map(p => p.x)), maxx = Math.max(...pts.map(p => p.x))
       const miny = Math.min(...pts.map(p => p.y)), maxy = Math.max(...pts.map(p => p.y))
       if (f.kind === 'building') {
-        const shape = new THREE.Shape(pts)
+        // Shape coordinates are X/Z footprint coordinates; extrude upward
+        // after rotation so OSM buildings stand on the terrain, not below it.
+        const shape = new THREE.Shape(pts.map(p => new THREE.Vector2(p.x, -p.y)))
         const wallH = f.context ? 3.2 : 3.6
         const walls = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: wallH, bevelEnabled: false }),
           f.context ? wallCtx : wallMat)
-        walls.rotation.x = Math.PI / 2
-        const cg = elevAt(pts[0].x, pts[0].y) - baseElev
+        walls.rotation.x = -Math.PI / 2
+        const cx = (minx + maxx) / 2, cz = (miny + maxy) / 2
+        const cg = elevAt(cx, cz) - baseElev
         walls.position.y = cg
         walls.castShadow = true; walls.receiveShadow = true
         scene.add(walls)
-        // gable roof over the footprint bbox
+        tag(walls, f.id ?? 'OSM building', f.context
+          ? 'Nearby building · site context'
+          : 'Building footprint · excluded from PV layout')
+        // Gabled roof over the footprint bbox.
         const bw = maxx - minx, bd = maxy - miny
-        const roofH = Math.min(bw, bd) * 0.35 + 0.6
-        const tri = new THREE.Shape([new THREE.Vector2(-bw / 2, 0), new THREE.Vector2(bw / 2, 0), new THREE.Vector2(0, roofH)])
-        const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(tri, { depth: bd, bevelEnabled: false }),
-          f.context ? roofCtx : roofMat)
-        roof.rotation.x = Math.PI / 2
-        roof.position.set((minx + maxx) / 2, cg + wallH, maxy)
+        const roofH = Math.min(2.4, Math.max(0.8, Math.min(bw, bd) * 0.3))
+        const ridgeZ = (miny + maxy) / 2, eaveY = cg + wallH, ridgeY = eaveY + roofH
+        const roofGeometry = new THREE.BufferGeometry()
+        roofGeometry.setAttribute('position', new THREE.Float32BufferAttribute([
+          minx, eaveY, miny, maxx, eaveY, miny, maxx, ridgeY, ridgeZ, minx, ridgeY, ridgeZ,
+          minx, ridgeY, ridgeZ, maxx, ridgeY, ridgeZ, maxx, eaveY, maxy, minx, eaveY, maxy,
+        ], 3))
+        roofGeometry.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7])
+        roofGeometry.computeVertexNormals()
+        const roof = new THREE.Mesh(roofGeometry, f.context ? roofCtx : roofMat)
         roof.castShadow = true
         scene.add(roof)
-        colliders.push({ x: (minx + maxx) / 2, z: (miny + maxy) / 2, r: Math.hypot(bw, bd) / 2 * 0.8 })
+        colliders.push({ x: cx, z: cz, r: Math.hypot(bw, bd) / 2 * 0.8 })
+      } else if (f.kind === 'water') {
+        const waterPoints: [number, number][] = pts.map(p => [p.x, p.y])
+        const shape = new THREE.Shape(waterPoints.map(([x, z]) => new THREE.Vector2(x, -z)))
+        const geometry = new THREE.ShapeGeometry(shape)
+        const level = Math.max(...waterPoints.map(([x, z]) => elevAt(x, z) - baseElev)) + 0.3
+        const positions = geometry.attributes.position
+        for (let i = 0; i < positions.count; i++) positions.setZ(i, level)
+        geometry.computeVertexNormals()
+        const surface = new THREE.Mesh(geometry, waterMat)
+        surface.rotation.x = -Math.PI / 2
+        surface.renderOrder = 2
+        scene.add(surface)
+        const edge = new THREE.LineLoop(
+          new THREE.BufferGeometry().setFromPoints(waterPoints.map(([x, z]) =>
+            new THREE.Vector3(x, level + 0.08, z))),
+          new THREE.LineBasicMaterial({ color: 0x70c2dc }),
+        )
+        scene.add(edge)
+        tag(surface, f.id ?? 'OSM water', f.context
+          ? 'Nearby waterbody · site context'
+          : 'Waterbody · excluded from PV layout')
+        waterZones.push(waterPoints)
       } else if (f.kind === 'wood') {
+        if (!f.context) {
+          const shape = new THREE.Shape(pts)
+          const geometry = new THREE.ShapeGeometry(shape)
+          const positions = geometry.attributes.position
+          for (let i = 0; i < positions.count; i++) {
+            const x = positions.getX(i), z = positions.getY(i)
+            positions.setZ(i, -(elevAt(x, z) - baseElev + 0.09))
+          }
+          geometry.computeVertexNormals()
+          const zone = new THREE.Mesh(geometry, exclusionMat)
+          zone.rotation.x = Math.PI / 2
+          zone.renderOrder = 1
+          scene.add(zone)
+          const outline = new THREE.BufferGeometry().setFromPoints(
+            pts.map(p => new THREE.Vector3(p.x, elevAt(p.x, p.y) - baseElev + 0.16, p.y)))
+          const line = new THREE.LineLoop(outline, new THREE.LineBasicMaterial({ color: 0xe87552 }))
+          scene.add(line)
+          tag(zone, f.id ?? 'WOODLAND', 'Woodland · excluded from PV layout')
+          const cx = pts.reduce((sum, p) => sum + p.x, 0) / pts.length
+          const cz = pts.reduce((sum, p) => sum + p.y, 0) / pts.length
+          groundLabel('WOODLAND · NO PV', cx, cz, 26)
+        }
         scatterTrees(pts, 60, 70)
-      } else if (f.kind === 'road') {
-        const shape = new THREE.Shape(pts)
-        const road = new THREE.Mesh(new THREE.ShapeGeometry(shape),
-          new THREE.MeshStandardMaterial({ color: 0x6b6b6b, roughness: 1, side: THREE.DoubleSide }))
-        road.rotation.x = Math.PI / 2
-        const cg = elevAt(pts[0].x, pts[0].y) - baseElev
-        road.position.y = cg + 0.05
-        road.receiveShadow = true
-        scene.add(road)
       }
     }
     } catch (e) { console.warn('osm', e) }
@@ -998,16 +1372,21 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
       for (const s of [-1, 1])
         place('/assets/barrier_fence.glb', x + gpx * s * 4.5, z + gpz * s * 4.5,
           Math.atan2(gdz, gdx), 1.8)
+
     }
     } catch (e) { console.warn('equipment', e) }
 
     try {
     // ---- cable trenches: flat ground-hugging strips inverter → transformer
     // (same right-angle routes the 2D map draws) + marker posts ----
-    const trenchMat = new THREE.MeshStandardMaterial({ color: 0x4a3d2a, roughness: 1, side: THREE.DoubleSide })
-    const markerMat = new THREE.MeshStandardMaterial({ color: 0xd9822b, roughness: 0.6 })
-    const markerGeo = new THREE.BoxGeometry(0.12, 0.9, 0.12)
-    const strip = (a: number[], b: number[], W: number) => {
+    const trenchMat = new THREE.MeshStandardMaterial({ color: 0x55442d, roughness: 1, side: THREE.DoubleSide })
+    const routeMat = new THREE.MeshBasicMaterial({
+      color: 0xff9b1b, transparent: true, opacity: 1, depthWrite: false,
+      side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1,
+    })
+    const markerMat = new THREE.MeshStandardMaterial({ color: 0xf2a33c, roughness: 0.5, emissive: 0x7a4a10, emissiveIntensity: 0.4 })
+    const markerGeo = new THREE.BoxGeometry(0.12, 0.75, 0.12)
+    const strip = (a: number[], b: number[], W: number, material: THREE.Material, lift: number) => {
       const [x1, z1] = a, [x2, z2] = b
       const len = Math.hypot(x2 - x1, z2 - z1)
       if (len < 0.5) return
@@ -1018,27 +1397,32 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
         const x = x1 + ux * len * i / segs, z = z1 + uz * len * i / segs
         for (const s of [-1, 1]) {
           const vx = x + px * s * W / 2, vz = z + pz * s * W / 2
-          pos.push(vx, elevAt(vx, vz) - baseElev + 0.06, vz)
+          pos.push(vx, elevAt(vx, vz) - baseElev + lift, vz)
         }
         if (i < segs) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2) }
       }
       const g = new THREE.BufferGeometry()
       g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3))
       g.setIndex(idx); g.computeVertexNormals()
-      const m = new THREE.Mesh(g, trenchMat)
+      const m = new THREE.Mesh(g, material)
       m.receiveShadow = true
       scene.add(m)
       // marker posts every ~30 m along the leg
       for (let i = 0; i <= len; i += 30) {
         const mx = x1 + ux * i, mz = z1 + uz * i
         const mk = new THREE.Mesh(markerGeo, markerMat)
-        mk.position.set(mx + px * 1.2, elevAt(mx + px * 1.2, mz + pz * 1.2) - baseElev + 0.45, mz + pz * 1.2)
+        mk.position.set(mx + px * 1.2, elevAt(mx + px * 1.2, mz + pz * 1.2) - baseElev + 0.375, mz + pz * 1.2)
         scene.add(mk)
       }
     }
     for (const r of e?.cable_routes ?? []) {
       const wps = r.coordinates.map(([lo, la]: number[]) => toXY(lo, la))
-      for (let i = 0; i < wps.length - 1; i++) strip(wps[i], wps[i + 1], 0.8)
+      for (let i = 0; i < wps.length - 1; i++) {
+        // The cable remains buried; a fine locator stripe makes its route
+        // legible during inspection without rendering an exposed cable.
+        strip(wps[i], wps[i + 1], 0.72, trenchMat, 0.08)
+        strip(wps[i], wps[i + 1], 0.28, routeMat, 0.15)
+      }
     }
     } catch (e) { console.warn('cables', e) }
 
@@ -1070,8 +1454,9 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
         // cheap grounding shadow disc (sprites can't cast real shadows)
         const shade = new THREE.Mesh(new THREE.CircleGeometry(h * 0.32, 14), shadeMat)
         shade.rotation.x = -Math.PI / 2
-        shade.position.set(x + h * 0.08, g0 + 0.05, z + h * 0.05)
+        shade.position.set(x, g0 + 0.07, z)
         scene.add(shade)
+        treeShadows.push({ mesh: shade, x, z, radius: h * 0.32, height: h })
         colliders.push({ x, z, r: 0.6 })
       }
     }
@@ -1162,26 +1547,75 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
     scene.add(grass)
     } catch (e) { console.warn('grass', e) }
 
-    // ---- drifting clouds ----
-    const clouds: THREE.Sprite[] = []
+    // ---- drifting high clouds (keep them well above the camera horizon) ----
     for (let i = 0; i < 7; i++) {
       const m = new THREE.SpriteMaterial({ map: cloudTex, transparent: true, opacity: 0.5 + rng() * 0.3, depthWrite: false })
       const s = new THREE.Sprite(m)
-      s.position.set((rng() - 0.5) * span * 1.4, 120 + rng() * 140, (rng() - 0.5) * span * 1.4)
-      const w = 120 + rng() * 220
+      s.position.set((rng() - 0.5) * span * 1.6, 340 + rng() * 120, (rng() - 0.5) * span * 1.6)
+      const w = 80 + rng() * 90
       s.scale.set(w, w * 0.4, 1)
       clouds.push(s)
       scene.add(s)
     }
+    setSun(sunHour)
 
-    // ---- spawn: stand at the access point, look at the array ----
-    camera.position.set(spawn[0], elevAt(spawn[0], spawn[1]) - baseElev + EYE, spawn[1])
-    camera.lookAt(0, camera.position.y, 0)
-    yaw = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ').y
-    const enter = () => { try { controls.lock() } catch { /* drag-look fallback */ } }
-    api_.current = { setSun, enter }
+    // The first frame is a site overview so the array and exclusion layout
+    // read clearly; the prompt switches into the ground-level walkthrough.
+    const busPoints = (e?.cable_routes ?? [])
+      .map((r: any) => r.coordinates?.[1])
+      .filter((p: number[] | undefined): p is number[] => !!p)
+      .map(([lon, lat]: number[]) => toXY(lon, lat))
+    const setWalkPose = () => {
+      camera.position.set(spawn[0], elevAt(spawn[0], spawn[1]) - baseElev + EYE, spawn[1])
+      if (walkTargetFocus) {
+        const [fx, fz] = walkTargetFocus
+        camera.lookAt(fx, elevAt(fx, fz) - baseElev + 1, fz)
+      } else if (contextBuildingFocus) {
+        const [bx, bz] = contextBuildingFocus
+        camera.lookAt(bx, elevAt(bx, bz) - baseElev + 2, bz)
+      } else if (busPoints.length) {
+        let tx = busPoints.reduce((sum: number, p: number[]) => sum + p[0], 0) / busPoints.length
+        let tz = busPoints.reduce((sum: number, p: number[]) => sum + p[1], 0) / busPoints.length
+        camera.lookAt(tx, elevAt(tx, tz) - baseElev + 1.2, tz)
+      } else {
+        camera.lookAt(0, camera.position.y, 0)
+      }
+      yaw = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ').y
+      pitch = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ').x
+    }
+    const siteCenterX = (Math.min(...xs) + Math.max(...xs)) / 2
+    const siteCenterZ = (Math.min(...zs) + Math.max(...zs)) / 2
+    const siteSpan = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs))
+    const overviewOffset = siteSpan * 0.47
+    const setOverviewPose = () => {
+      camera.position.set(siteCenterX - overviewOffset, siteSpan * 0.42, siteCenterZ - overviewOffset)
+      camera.lookAt(siteCenterX, 0, siteCenterZ)
+      yaw = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ').y
+      pitch = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ').x
+    }
+    setWalkPose()
+    walkMode = true
+    setWalking(true)
+    activateWalkMode = () => {
+      if (walkMode) return
+      walkMode = true
+      setWalking(true)
+      setWalkPose()
+    }
+    const enter = () => {
+      activateWalkMode()
+      try { controls.lock() } catch { /* drag-look fallback */ }
+    }
+    const overview = () => {
+      walkMode = false
+      setWalking(false)
+      if (controls.isLocked) controls.unlock()
+      setOverviewPose()
+    }
+    api_.current = { setSun, enter, overview }
 
     ;(window as any).__beamScene = scene
+    ;(window as any).__beamDebug = () => ({ walkMode, locked: controls.isLocked, keys: [...keys], pos: camera.position.toArray() })
     // ---- loop ----
     let raf = 0, frame = 0
     const clock = new THREE.Clock()
@@ -1192,37 +1626,39 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
       frame++
       const dt = Math.min(clock.getDelta(), 0.05)
       // ---- first-person movement ----
-      const sprint = keys.has('ShiftLeft') || keys.has('ShiftRight')
-      const speed = sprint ? 22 : 8
-      const fwd = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0)
-      const str = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0)
-      const dir = new THREE.Vector3(str, 0, -fwd).normalize()
-      // move relative to camera yaw only (no pitch in walking)
-      dir.applyEuler(new THREE.Euler(0, new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ').y, 0, 'YXZ'))
-      vel.lerp(dir.multiplyScalar(speed), airborne ? 0.04 : 0.25)
-      camera.position.addScaledVector(vel, dt)
-      resolveColliders(camera.position)
-      // sprint FOV kick — subtle speed cue
-      const targetFov = sprint && vel.lengthSq() > 40 ? 78 : 70
-      if (Math.abs(camera.fov - targetFov) > 0.1) {
-        camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 6)
-        camera.updateProjectionMatrix()
+      if (walkMode) {
+        const sprint = keys.has('ShiftLeft') || keys.has('ShiftRight')
+        const speed = sprint ? 22 : 8
+        const fwd = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0)
+        const str = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0)
+        const dir = new THREE.Vector3(str, 0, -fwd).normalize()
+        // move relative to camera yaw only (no pitch in walking)
+        dir.applyEuler(new THREE.Euler(0, new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ').y, 0, 'YXZ'))
+        vel.lerp(dir.multiplyScalar(speed), airborne ? 0.04 : 0.25)
+        camera.position.addScaledVector(vel, dt)
+        resolveColliders(camera.position)
+        // sprint FOV kick — subtle speed cue
+        const targetFov = sprint && vel.lengthSq() > 40 ? 78 : 70
+        if (Math.abs(camera.fov - targetFov) > 0.1) {
+          camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 6)
+          camera.updateProjectionMatrix()
+        }
+        // gravity + terrain-following eye height
+        const groundY = elevAt(camera.position.x, camera.position.z) - baseElev + EYE
+        if (airborne) {
+          vy -= 14 * dt
+          camera.position.y += vy * dt
+          if (camera.position.y <= groundY) { camera.position.y = groundY; vy = 0; airborne = false }
+        } else {
+          // smooth follow so slopes don't feel like teleporting
+          camera.position.y += (groundY - camera.position.y) * Math.min(1, dt * 12)
+        }
+        // head-bob while moving on the ground
+        if (!airborne && vel.lengthSq() > 1)
+          camera.position.y += Math.sin(clock.elapsedTime * (sprint ? 11 : 8)) * 0.035
+        camera.position.x = Math.max(minX, Math.min(maxX, camera.position.x))
+        camera.position.z = Math.max(minZ, Math.min(maxZ, camera.position.z))
       }
-      // gravity + terrain-following eye height
-      const groundY = elevAt(camera.position.x, camera.position.z) - baseElev + EYE
-      if (airborne) {
-        vy -= 14 * dt
-        camera.position.y += vy * dt
-        if (camera.position.y <= groundY) { camera.position.y = groundY; vy = 0; airborne = false }
-      } else {
-        // smooth follow so slopes don't feel like teleporting
-        camera.position.y += (groundY - camera.position.y) * Math.min(1, dt * 12)
-      }
-      // head-bob while moving on the ground
-      if (!airborne && vel.lengthSq() > 1)
-        camera.position.y += Math.sin(clock.elapsedTime * (sprint ? 11 : 8)) * 0.035
-      camera.position.x = Math.max(minX, Math.min(maxX, camera.position.x))
-      camera.position.z = Math.max(minZ, Math.min(maxZ, camera.position.z))
       for (const c of clouds) {
         c.position.x += dt * 2.2
         if (c.position.x > span * 0.9) c.position.x = -span * 0.9
@@ -1242,7 +1678,6 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
           setInsp(next)
       }
       grade.uniforms.uTime.value = clock.elapsedTime
-      updateChips()
       composer.render()
     }
     animate()
@@ -1269,7 +1704,6 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
       composer.dispose()
       renderer.dispose()
       mount.removeChild(renderer.domElement)
-      for (const { el } of chips) el.remove()
     }
   }, [design, dem])
 
@@ -1289,11 +1723,11 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
       {/* click-to-enter prompt — pointer lock needs a user gesture.
           Kept low + compact so it doesn't block the view */}
       {dem !== undefined && !locked && (
-        <button onClick={() => api_.current?.enter()}
-          className="absolute bottom-20 inset-x-0 mx-auto w-fit panel px-4 py-2 flex items-center gap-3 hover:border-[#d9822b] transition-colors z-10">
-          <span className="microlabel text-[#d9822b]">FPS</span>
-          <span className="text-xs">Click to walk the site</span>
-          <span className="text-[10px] text-slate-500">WASD · mouse · shift · space</span>
+        <button onClick={() => walking ? api_.current?.overview() : api_.current?.enter()}
+          className="absolute top-3 left-1/2 -translate-x-1/2 w-fit panel px-4 py-2 flex items-center gap-3 hover:border-[#d9822b] transition-colors z-10">
+          <span className="microlabel text-[#d9822b]">{walking ? 'WALK' : 'OVERVIEW'}</span>
+          <span className="text-xs">{walking ? 'Return to site overview' : 'Click to walk the site'}</span>
+          <span className="text-[10px] text-slate-500">{walking ? 'drag to look · WASD to move' : 'WASD · mouse · shift · space'}</span>
         </button>
       )}
       {/* crosshair + inspection label while locked */}
@@ -1318,12 +1752,12 @@ export default function Scene3D({ design, tiltDeg, azimuthDeg, onClose }: Props)
       </div>
       <div className="absolute bottom-4 left-3 panel px-3 py-2 flex items-center gap-2">
         <span className="text-xs text-slate-400">☀ {String(Math.floor(sunHour)).padStart(2, '0')}:{String(Math.round((sunHour % 1) * 60)).padStart(2, '0')}</span>
-        <input type="range" min={5} max={21.5} step={0.25} value={sunHour}
-          onChange={e => setSunHour(+e.target.value)} className="w-44 accent-yellow-400" />
-        <span className="text-[10px] text-slate-500">drag — sun + shadows</span>
+        <input type="range" min={0} max={23.75} step={0.25} value={sunHour}
+          onChange={e => onSunHourChange(+e.target.value)} className="w-44 accent-yellow-400" />
+        <span className="text-[10px] text-slate-500">time · live 3D shadows</span>
       </div>
       <div className="absolute bottom-4 right-3 text-[10px] text-slate-500 bg-black/60 rounded px-2 py-1">
-        {locked ? 'esc — release mouse · wasd move · shift sprint · space jump' : 'click to enter · or drag to look'}
+        {locked ? 'esc — release mouse · wasd move · shift sprint · space jump' : walking ? 'drag to look · WASD move · use the top prompt to return' : 'click scene or prompt to walk · drag to look'}
       </div>
     </div>
   )

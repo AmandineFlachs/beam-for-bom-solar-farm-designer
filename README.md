@@ -1,56 +1,51 @@
 # BEAM for BOM: Solar Farm Designer
 
-**Draw a boundary. Beam designs the solar farm, estimates the energy,
-and writes the report — then lets you walk the site in 3D.**
+## Project summary
 
-Browser-based agentic solar-farm feasibility studio built for the Beam
-hackathon. A user draws a land boundary on a satellite globe, and BEAM
-(the agent) produces a preliminary utility-scale design end to end:
-terrain screening with OSM auto-exclusions, PV table layout, DC/AC
-electrical sizing, PVGIS yield estimate, grid/transformer
-recommendation, a procurement-ready bill of materials, and a written
-proposal. A Three.js preview rebuilds the site on real heightfield
-terrain with a time-of-day sun study and walkable first-person mode,
-and a conversational layer ("Ask Beam") lets you re-plan the site in
-plain language.
+BEAM for BOM is an agentic solar-farm feasibility studio built on Beam,
+Reflection's 501B-parameter reasoning model, for the **Build with Beam**
+challenge. The problem it tackles: first-pass site screening for
+utility-scale solar still takes weeks of manual GIS work per site,
+redone every time a constraint changes. You draw a land boundary on
+a satellite globe and Beam designs the farm end to end: it detects
+constraints from OpenStreetMap, packs panel tables around them, sizes
+the electrical kit, estimates generation from PVGIS data, and writes a
+procurement-ready bill of materials and proposal. A Three.js preview
+rebuilds the site on real elevation terrain with a time-of-day sun
+study and a walkable first-person mode, and a conversational layer
+("Ask Beam") lets you re-plan the site in plain language while you
+watch it reason.
 
-> Preliminary feasibility and procurement-planning only. Not a bankable,
-> construction-ready, or grid-application design.
+[![Video](docs/video-thumbnail.png)](VIDEO_URL)
 
-## The pipeline
+## Repository
 
-- **Boundary** — draw the site and exclusion zones on satellite imagery
-- **Energy** — PVGIS solar-resource assessment and generation estimate
-- **Array** — deterministic fixed-tilt PV table layout engine
-- **Materials** — DC/AC electrical sizing, transformer rules, BOM, exports
-
-The agent (Beam, Reflection's 501B-parameter reasoning model, via tool
-calling) **never invents a number** — every
-figure comes from a typed backend tool call. If no Beam endpoint is configured
-the app falls back to a deterministic scripted Beam that narrates the same
-tool results, so the demo always works (the UI labels it "offline scripted
-mode" honestly).
-
-### Beam integration notes
-
-- **Real model**: `Beam-1.0-501B-A23B` via Reflection's OpenAI-compatible
-  endpoint (`BEAM_API_BASE=https://api.reflection.ai/openai/v1`).
-- **Tools**: `run_full_design` (whole pipeline), `run_stage` (re-run one
-  stage — Beam plans narrow changes like "tilt → layout+yield+bom, skip
-  terrain"), `compare_scenarios`, `get_design_summary`, `export_project`.
-- **Reasoning is visible**: Beam always reasons; its `reasoning_content` is
-  captured per turn and shown in the chat UI ("Beam's reasoning"), plus
-  latency + token usage per reply. Effort is selectable (`low`→`max`) via
-  `BEAM_REASONING_EFFORT` or the UI selector.
-- **Multi-turn quirk**: the Reflection API *requires* `reasoning_content` to
-  be echoed back on every assistant tool-call turn — we preserve it
-  verbatim in the message history (a missing field is a `400`). This is
-  what makes the loop genuinely multi-turn rather than a stateless wrapper.
+```bash
+├── backend
+│   ├── app            # FastAPI services: terrain, layout, electrical, yield, BOM, agent
+│   └── eval           # Agentic eval: tasks.json, run_eval.py, results.csv, ledger.jsonl
+├── docs               # Architecture + agent-loop diagrams
+├── eval               # Submission assets: video script, diagrams (HTML), session notes
+├── frontend           # React + Vite + TypeScript: Cesium MapView, Three.js Scene3D
+├── Dockerfile         # Single-container build for Hugging Face Spaces
+├── LICENSE
+└── README.md
+```
 
 ## Architecture
 
+Two 3D surfaces share one data source. A React + Cesium globe is the
+working map (every entity flat on the same reference ellipsoid), and a
+Three.js scene is the cinematic preview — a real heightfield from
+Mapterhorn DEM tiles with draped Esri imagery. A FastAPI backend runs
+the deterministic engineering services; Beam drives them through a
+tool-calling loop.
+
+![Architecture](docs/architecture.png)
+
 ```
-React + CesiumJS frontend (Esri World Imagery, Turf)
+React + CesiumJS frontend (Esri World Imagery, Turf)      ← working map
+React + Three.js scene (Mapterhorn DEM, draped imagery)   ← 3D preview
         | REST
 FastAPI backend
         +-- Terrain service    (Open-Meteo/Open-Elevation, slope/aspect mask)
@@ -63,25 +58,101 @@ FastAPI backend
 SQLite project store
 ```
 
+![Agent loop](docs/agent_loop.png)
+
+### Beam integration
+
+- **Real model**: `Beam-1.0-501B-A23B` via Reflection's OpenAI-compatible
+  endpoint (`BEAM_API_BASE=https://api.reflection.ai/openai/v1`).
+- **Tools**: `run_full_design` (whole pipeline), `run_stage` (re-run one
+  stage — Beam plans narrow changes like "tilt → layout+yield+bom, skip
+  terrain"), `compare_scenarios`, `get_design_summary`, `export_project`.
+- **Reasoning is visible**: Beam always reasons; its `reasoning_content`
+  is captured per turn and shown in the chat UI ("Beam's reasoning"),
+  plus latency + token usage per reply. Effort is selectable
+  (`low`→`max`) via `BEAM_REASONING_EFFORT` or the UI selector.
+- **Multi-turn quirk**: the Reflection API *requires* `reasoning_content`
+  to be echoed back on every assistant tool-call turn — we preserve it
+  verbatim in the message history (a missing field is a `400`). This is
+  what makes the loop genuinely multi-turn rather than a stateless
+  wrapper.
+- **Grounding**: every figure comes from a typed tool call; Beam never
+  invents a number. With no Beam endpoint configured, the app falls
+  back to a deterministic scripted Beam narrating real tool results,
+  and the UI labels it "offline scripted mode" honestly.
+- **Call ledger**: all LLM calls land in a JSONL ledger
+  (`backend/eval/ledger.jsonl`): surface, effort, per-call tokens
+  including reasoning, tool calls with args, latency.
+
+## Evaluating Beam
+
+11 agentic tasks (`backend/eval/tasks.json`) cover tool selection,
+pipeline scoping and grounding, each run at three reasoning efforts, 2
+runs per cell, against the live model — 66 runs, results in
+`backend/eval/results.csv`:
+
+| effort | tasks passed | avg reasoning tokens | avg completion tokens | avg latency |
+|---|---|---|---|---|
+| low    | 16/22 | 190 | 602   | 5.8 s |
+| medium | 16/22 | 449 | 919   | 7.2 s |
+| high   | 15/22 | 748 | 1,279 | 9.1 s |
+
+Tool selection is nearly perfect at every effort, and `high` costs
+~2.1× the completion tokens for no extra correctness — low effort is
+already enough for this workload.
+
+![Effort vs cost](docs/effort_cost.png)
+
+The observed failure mode is stage scoping: on narrow changes Beam
+re-runs the `electrical` stage every time (12/12). Wasteful, not wrong.
+
+![Stage scoping](docs/scoping_map.png)
+
+Re-run with `uv run python eval/run_eval.py --effort low medium high
+--runs 3` (needs a live backend with `BEAM_API_*` set).
+
 ## Tech stack
 
-- **Frontend**: React + Vite + TypeScript, CesiumJS, Esri World Imagery, Recharts, Tailwind CSS
-- **Backend**: Python 3.11+, FastAPI, Pydantic, Shapely, pyproj, pvlib, httpx, SQLite
+- **Frontend**: React + Vite + TypeScript, CesiumJS, Three.js, Esri
+  World Imagery, Recharts, Tailwind CSS
+- **Backend**: Python 3.11+, FastAPI, Pydantic, Shapely, pyproj, pvlib,
+  httpx, SQLite
 - **Agent**: OpenAI-compatible tool calling against `BEAM_API_BASE`
 
-## Run locally
+## Prerequisites
+
+Python 3.11+ (we use `uv`), Node 18+. Developed on macOS. No API keys
+required for the offline scripted mode; a Reflection Beam endpoint is
+needed for live mode.
+
+## Run demo
 
 ```bash
 # backend
 cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --port 8000
+uv run uvicorn app.main:app --port 8000
 
 # frontend (new terminal)
 cd frontend
 npm install
 npm run dev    # http://localhost:5173, proxies /api -> :8000
 ```
+
+Then click **Run the demo**: an irregular ~10 ha East York site combining a
+mapped farmland field with its adjoining ~1.12 ha waterbody. This is an
+illustrative site-boundary assumption; land ownership is not verified. BEAM
+detects the waterbody and its 5 m buffer (~1.35 ha), nearby roads/woodland, and the
+adjoining farmstead yard — five mapped buildings in the east-side farmstead pocket, shown as
+red no-panel areas; Heeling House across the pond remains outside the site.
+The 2.5 MWp target produces 248 tables / 5,952 modules for a 2.559 MWp
+array, estimated at ~2,364.5 MWh/yr via PVGIS.
+
+**60-second tour:** run the demo → globe fly-in → design pipeline →
+**Report** for capacity, yield and the BOM one-pager → **3D Preview**
+for the terrain scene, shared time-of-day control, first-person walk
+(WASD + mouse, sprint/jump, inspection labels, cable route, weather
+mast, gate) → **Ask Beam** e.g. "reduce land use by 20%" — it re-runs
+the layout with a denser packing factor and updates the BOM.
 
 Optional real-Beam agent (see `backend/.env.example`):
 
@@ -91,8 +162,9 @@ export BEAM_API_BASE=... BEAM_API_KEY=... BEAM_MODEL=...
 
 ## Deploy (Hugging Face Space)
 
-Create a **Docker** Space and push this repo — `Dockerfile` builds the frontend
-and serves it from FastAPI on port 7860. Set `BEAM_API_*` as Space secrets.
+Create a **Docker** Space and push this repo — `Dockerfile` builds the
+frontend and serves it from FastAPI on port 7860. Set `BEAM_API_*` as
+Space secrets. Live demo: SPACE_URL
 
 ## API
 
@@ -106,52 +178,44 @@ and serves it from FastAPI on port 7860. Set `BEAM_API_*` as Space secrets.
 | `POST /api/bom` | Bill of materials |
 | `POST /api/design` | Full workflow (main agent endpoint) |
 | `POST /api/chat` | Beam agent (tool-calling or scripted fallback) |
+| `POST /api/proposal` | Beam-written proposal narrative (template fallback) |
 | `POST /api/export` | GeoJSON + CSV BOM + Markdown proposal + JSON |
+| `POST /api/demo` | Load the East York Water Field demo site |
 | `GET /api/geocode` | Place search (Open-Meteo) |
-
-## Demo scenario
-
-Click **Run the demo**: a ~7 ha real OSM farmland parcel at Escrick
-Field in the Vale of York — flat, unprotected, with a pond and a copse
-the pipeline detects from OpenStreetMap and excludes automatically.
-The layout engine packs 145 tables / 3,480 modules around them for a
-1.5 MWp array, estimated at ~1,383 MWh/yr via PVGIS.
-
-**60-second demo:** run the demo → globe fly-in → design pipeline →
-**Report** for capacity, yield and the BOM one-pager → **3D Preview**
-for the terrain scene, sun-slider exposure study and first-person walk
-(WASD + mouse, sprint/jump, equipment inspection labels, cable
-trenches, weather mast, gate) → **Ask Beam** e.g. "reduce land use by
-20%" — it re-runs the layout with a denser packing factor and updates
-the BOM.
-
-During terrain analysis, BEAM also queries OpenStreetMap for buildings,
-water bodies and woodland inside the boundary and auto-excludes them
-(with per-type buffers) — no VLM required, and every detection is real
-geodata the agent can cite.
 
 ## Data sources
 
-- Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community —
-  non-commercial demonstration use
+- Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User
+  Community — non-commercial demonstration use
+- Terrain (3D preview): Mapterhorn Terrarium DEM tiles
 - Elevation: Open-Meteo Elevation API (fallback: Open-Elevation), cached
+- Exclusions: OpenStreetMap (buildings, water, woodland, per-type buffers)
 - Yield: PVGIS 5.x via `pvlib.iotools` (hourly, monthly fallback, cached)
 - Geocoding: Open-Meteo Geocoding API
 
 ## Limitations
 
-- Feasibility-grade only; slope limit 8°, no shading simulation, no planning
-  constraints, no geotechnical assessment
+- Feasibility-grade only; slope limit 8°, no shading simulation, no
+  planning constraints, no geotechnical assessment
 - Cable routes are simplified right-angle estimates
-- Transformer/grid sizing is rule-based — **DNO confirmation always required**
+- Transformer/grid sizing is rule-based — **DNO confirmation always
+  required**
 - Elevation grid resolution ~30 m; small sites densify automatically
 
 ## Roadmap
 
 Rooftop + shading → trackers / east-west → cable routing optimisation →
-supplier pricing → CapEx/LCOE model → DNO workflow → planning constraints →
-construction-ready exports.
+supplier pricing → CapEx/LCOE model → DNO workflow → planning
+constraints → construction-ready exports.
+
+## Team
+
+- Amandine Flachs
+- Extended with Mirror, Reflection's agent — MultiPolygon boundaries,
+  the `/api/proposal` surface, and shading-derived row pitch were
+  written by Mirror running on Beam (session notes in
+  `eval/mirror_session.md`, commits verifiable in git).
 
 ## License
 
-MIT (hackathon prototype)
+MIT, as found in the [LICENSE](LICENSE) file.

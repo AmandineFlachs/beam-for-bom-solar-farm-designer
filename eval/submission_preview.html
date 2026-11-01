@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<!-- Submission preview mockup — GitHub repo + HF discussion post side by side. -->
+<html><head><meta charset="utf-8">
+<title>Submission preview — GitHub + Hugging Face</title>
+<style>
+  * { margin:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    background:#e5e7eb; padding:24px; }
+  .tabs { display:flex; gap:8px; margin:0 auto 16px; max-width:1900px; }
+  .tab { padding:10px 22px; border-radius:8px 8px 0 0; background:#d1d5db;
+    color:#374151; cursor:pointer; font-weight:600; font-size:14px; }
+  .tab.active { background:#fff; color:#111; }
+  .view { display:none; max-width:1900px; margin:0 auto; background:#fff;
+    border-radius:0 8px 8px 8px; box-shadow:0 2px 8px rgba(0,0,0,.08);
+    overflow:hidden; }
+  .view.active { display:block; }
+
+  /* ---------- GitHub ---------- */
+  .gh-head { background:#f6f8fa; border-bottom:1px solid #d8dee4; padding:16px 24px; }
+  .gh-repo { font-size:20px; color:#0969da; }
+  .gh-repo .owner { font-weight:400; }
+  .gh-repo .name { font-weight:600; }
+  .gh-pub { font-size:12px; border:1px solid #d8dee4; border-radius:12px;
+    padding:2px 8px; color:#57606a; margin-left:8px; vertical-align:middle; }
+  .gh-nav { display:flex; gap:18px; padding:10px 24px; border-bottom:1px solid #d8dee4;
+    font-size:14px; color:#57606a; }
+  .gh-nav b { color:#1f2328; border-bottom:2px solid #fd8c73; padding-bottom:10px; }
+  .gh-body { display:flex; }
+  .gh-main { flex:1; padding:24px 32px; min-width:0; }
+  .gh-files { border:1px solid #d8dee4; border-radius:6px; font-size:14px; margin-bottom:24px; }
+  .gh-files div { padding:8px 14px; border-bottom:1px solid #f0f2f4; color:#1f2328; }
+  .gh-files div:last-child { border-bottom:none; }
+  .gh-files .dir { color:#0969da; }
+  .gh-files .cm { float:right; color:#57606a; font-size:12px; }
+  .gh-readme { border:1px solid #d8dee4; border-radius:6px; }
+  .gh-readme .rh { padding:8px 14px; border-bottom:1px solid #d8dee4;
+    font-size:14px; font-weight:600; }
+  .gh-readme .rc { padding:24px 32px; }
+  .gh-side { width:300px; padding:24px; border-left:1px solid #f0f2f4;
+    font-size:13px; color:#57606a; }
+  .gh-side h4 { font-size:14px; color:#1f2328; margin-bottom:8px; }
+  .gh-side p { margin-bottom:14px; line-height:1.5; }
+
+  /* ---------- markdown-ish ---------- */
+  .md h1 { font-size:28px; border-bottom:1px solid #d8dee4; padding-bottom:8px;
+    margin-bottom:16px; color:#1f2328; }
+  .md h2 { font-size:20px; border-bottom:1px solid #eaeef2; padding-bottom:6px;
+    margin:28px 0 12px; color:#1f2328; }
+  .md h3 { font-size:16px; margin:20px 0 8px; color:#1f2328; }
+  .md p, .md li { font-size:14px; line-height:1.6; color:#1f2328; }
+  .md p { margin-bottom:12px; }
+  .md ul { padding-left:22px; margin-bottom:12px; }
+  .md li { margin-bottom:4px; }
+  .md code { background:#eff1f3; padding:2px 5px; border-radius:4px;
+    font:12px/1.4 ui-monospace,Menlo,monospace; }
+  .md pre { background:#f6f8fa; border:1px solid #eaeef2; border-radius:6px;
+    padding:12px 16px; overflow:auto; margin-bottom:12px; }
+  .md pre code { background:none; padding:0; }
+  .md table { border-collapse:collapse; margin-bottom:12px; font-size:13px; }
+  .md th, .md td { border:1px solid #d8dee4; padding:6px 13px; }
+  .md th { background:#f6f8fa; }
+  .md img { max-width:100%; border-radius:6px; margin:8px 0; }
+  .md blockquote { border-left:3px solid #d8dee4; padding-left:14px;
+    color:#57606a; margin-bottom:12px; }
+  .vid { display:block; max-width:480px; }
+
+  /* ---------- Hugging Face ---------- */
+  .hf-head { background:#fff; border-bottom:1px solid #e5e7eb; padding:16px 24px;
+    display:flex; align-items:center; gap:10px; }
+  .hf-logo { font-size:22px; }
+  .hf-crumb { font-size:15px; color:#6b7280; }
+  .hf-crumb b { color:#111827; }
+  .hf-post { max-width:900px; margin:0 auto; padding:32px 40px 48px; }
+  .hf-meta { display:flex; align-items:center; gap:10px; margin-bottom:20px; }
+  .hf-avatar { width:36px; height:36px; border-radius:50%; background:#f59e0b;
+    display:flex; align-items:center; justify-content:center; color:#fff;
+    font-weight:700; }
+  .hf-meta .who { font-size:14px; }
+  .hf-meta .who b { display:block; color:#111827; }
+  .hf-meta .who span { color:#9ca3af; font-size:12px; }
+</style></head><body>
+
+<div class="tabs">
+  <div class="tab active" onclick="show(0)">GitHub — AmandineFlachs/beam</div>
+  <div class="tab" onclick="show(1)">Hugging Face — discussion post</div>
+</div>
+
+<!-- ===================== GITHUB ===================== -->
+<div class="view active">
+  <div class="gh-head">
+    <span class="gh-repo"><span class="owner">AmandineFlachs</span> /
+      <span class="name">beam</span></span><span class="gh-pub">Public</span>
+  </div>
+  <div class="gh-nav"><b>Code</b><span>Issues</span><span>Pull requests</span>
+    <span>Actions</span><span>Projects</span><span>Wiki</span><span>Settings</span></div>
+  <div class="gh-body">
+    <div class="gh-main md">
+      <div class="gh-files">
+        <div><span class="dir">📁 backend</span><span class="cm">eval results committed</span></div>
+        <div><span class="dir">📁 docs</span><span class="cm">architecture + agent-loop diagrams</span></div>
+        <div><span class="dir">📁 eval</span><span class="cm">submission assets</span></div>
+        <div><span class="dir">📁 frontend</span><span class="cm">map + 3D preview</span></div>
+        <div>📄 Dockerfile <span class="cm">HF Space build</span></div>
+        <div>📄 LICENSE</div>
+        <div>📄 README.md</div>
+      </div>
+      <div class="gh-readme">
+        <div class="rh">README.md</div>
+        <div class="rc md">
+          <h1>BEAM for BOM: Solar Farm Designer</h1>
+          <h2>Project summary</h2>
+          <p>BEAM for BOM is an agentic solar-farm feasibility studio built on
+          Beam, Reflection's 501B-parameter reasoning model, for the
+          <b>Build with Beam</b> challenge. The problem it tackles: first-pass
+          site screening for utility-scale solar still takes weeks of manual
+          GIS work per site, redone every time a constraint changes. You draw
+          a land boundary on a satellite globe and Beam designs the farm end
+          to end: it detects constraints from OpenStreetMap, packs panel
+          tables around them, sizes the electrical kit, estimates generation
+          from PVGIS data, and writes a procurement-ready bill of materials
+          and proposal. A Three.js preview rebuilds the site on real
+          elevation terrain with a time-of-day sun study and a walkable
+          first-person mode, and a conversational layer ("Ask Beam") lets you
+          re-plan the site in plain language while you watch it reason.</p>
+          <a class="vid"><img src="../docs/architecture.png" alt="video thumbnail"></a>
+          <h2>Repository</h2>
+          <pre><code>├── backend
+│   ├── app            # FastAPI services: terrain, layout, electrical, yield, BOM, agent
+│   └── eval           # Agentic eval: tasks.json, run_eval.py, results.csv, ledger.jsonl
+├── docs               # Architecture + agent-loop + eval diagrams
+├── eval               # Submission assets: video script, diagrams (HTML), session notes
+├── frontend           # React + Vite + TypeScript: Cesium MapView, Three.js Scene3D
+├── Dockerfile         # Single-container build for Hugging Face Spaces
+├── LICENSE
+└── README.md</code></pre>
+          <h2>Architecture</h2>
+          <p>Two 3D surfaces share one data source. A React + Cesium globe is
+          the working map; a Three.js scene is the cinematic preview on real
+          heightfield terrain. A FastAPI backend runs the deterministic
+          engineering services; Beam drives them through a tool-calling loop.</p>
+          <img src="../docs/architecture.png">
+          <pre><code>React + CesiumJS frontend (Esri World Imagery, Turf)      ← working map
+React + Three.js scene (Mapterhorn DEM, draped imagery)   ← 3D preview
+        | REST
+FastAPI backend
+        +-- Terrain service    (Open-Meteo/Open-Elevation, slope/aspect mask)
+        +-- Layout service     (Shapely clipping, azimuth-rotated table grid)
+        +-- Electrical service (strings, inverters, cables, transformer rules)
+        +-- Yield service      (PVGIS via pvlib, hourly -> monthly fallback, cached)
+        +-- BOM service        (deterministic package generation)
+        +-- Export service     (GeoJSON / CSV / Markdown / JSON)
+        +-- Agent layer        (OpenAI-compatible Beam endpoint or scripted fallback)
+SQLite project store</code></pre>
+          <img src="../docs/agent_loop.png">
+          <h3>Beam integration</h3>
+          <ul>
+            <li><b>Real model</b>: <code>Beam-1.0-501B-A23B</code> via
+              Reflection's OpenAI-compatible endpoint.</li>
+            <li><b>Tools</b>: <code>run_full_design</code>, <code>run_stage</code>,
+              <code>compare_scenarios</code>, <code>get_site_conditions</code>,
+              <code>get_design_summary</code>, <code>export_project</code>.</li>
+            <li><b>Reasoning is visible</b>: <code>reasoning_content</code>
+              captured per turn and shown in the chat UI, plus latency + token
+              usage per reply.</li>
+            <li><b>Multi-turn quirk</b>: the API requires
+              <code>reasoning_content</code> echoed verbatim on every assistant
+              tool-call turn — preserved across turns (400 otherwise).</li>
+            <li><b>Grounding</b>: every figure comes from a typed tool call;
+              Beam never invents a number. Offline scripted mode is labelled
+              honestly.</li>
+            <li><b>Call ledger</b>: all LLM calls land in
+              <code>backend/eval/ledger.jsonl</code>.</li>
+          </ul>
+          <h2>Evaluating Beam</h2>
+          <p>11 agentic tasks cover tool selection, pipeline scoping and
+          grounding — 66 runs at three reasoning efforts against the live
+          model:</p>
+          <table>
+            <tr><th>effort</th><th>tasks passed</th><th>avg reasoning tokens</th><th>avg completion tokens</th><th>avg latency</th></tr>
+            <tr><td>low</td><td>16/22</td><td>190</td><td>602</td><td>5.8 s</td></tr>
+            <tr><td>medium</td><td>16/22</td><td>449</td><td>919</td><td>7.2 s</td></tr>
+            <tr><td>high</td><td>15/22</td><td>748</td><td>1,279</td><td>9.1 s</td></tr>
+          </table>
+          <p>Tool selection is nearly perfect at every effort, and
+          <code>high</code> costs ~2.1× the completion tokens for no extra
+          correctness.</p>
+          <img src="../docs/effort_cost.png">
+          <p>The observed failure mode is stage scoping: on narrow changes
+          Beam re-runs the <code>electrical</code> stage every time (12/12).
+          Wasteful, not wrong.</p>
+          <img src="../docs/scoping_map.png">
+          <h2>Tech stack</h2>
+          <ul>
+            <li><b>Frontend</b>: React + Vite + TypeScript, CesiumJS, Three.js,
+              Esri World Imagery, Recharts, Tailwind CSS</li>
+            <li><b>Backend</b>: Python 3.11+, FastAPI, Pydantic, Shapely,
+              pyproj, pvlib, httpx, SQLite</li>
+            <li><b>Agent</b>: OpenAI-compatible tool calling against
+              <code>BEAM_API_BASE</code></li>
+          </ul>
+          <h2>Prerequisites</h2>
+          <p>Python 3.11+ (<code>uv</code>), Node 18+. No API keys required for
+          the offline scripted mode; a Reflection Beam endpoint for live mode.</p>
+          <h2>Run demo</h2>
+          <pre><code>cd backend && uv run uvicorn app.main:app --port 8000
+cd frontend && npm install && npm run dev</code></pre>
+          <p>Then click <b>Run the demo</b>: an irregular ~10 ha East York site
+          combining a mapped farmland field with its adjoining ~1.12 ha
+          waterbody. This is an illustrative site-boundary assumption; land
+          ownership is not verified. BEAM detects the waterbody and its 5 m
+          buffer (~1.35 ha), nearby roads/woodland, and the adjoining farmstead yard —
+          five mapped buildings in the east-side farmstead pocket, shown as
+          red no-panel areas; Heeling House across the pond remains outside.
+          The 2.5 MWp target produces 248 tables / 5,952 modules for a
+          2.559 MWp array, ~2,364.5 MWh/yr via PVGIS.</p>
+          <p><b>60-second tour:</b> demo → globe fly-in → pipeline →
+          <b>Report</b> → <b>3D Preview</b> (terrain scene, time-of-day sun
+          study, first-person walk) → <b>Ask Beam</b> "reduce land use by 20%".</p>
+          <h2>Deploy (Hugging Face Space)</h2>
+          <p>Create a <b>Docker</b> Space and push this repo —
+          <code>Dockerfile</code> builds the frontend and serves it from
+          FastAPI on port 7860. Set <code>BEAM_API_*</code> as Space secrets.</p>
+          <h2>Data sources &amp; limitations</h2>
+          <ul>
+            <li>Imagery © Esri / Maxar — non-commercial demo use; Mapterhorn
+              DEM, Open-Meteo elevation, OpenStreetMap exclusions, PVGIS yield</li>
+            <li>Feasibility-grade only; rule-based electrical sizing —
+              <b>DNO confirmation always required</b></li>
+          </ul>
+          <h2>Team</h2>
+          <ul>
+            <li>Amandine Flachs</li>
+            <li>Extended with Mirror, Reflection's agent — MultiPolygon
+              boundaries, the proposal surface, and shading-derived row pitch
+              (<code>eval/mirror_session.md</code>)</li>
+          </ul>
+          <h2>License</h2>
+          <p>MIT, as found in the <a href="#">LICENSE</a> file.</p>
+        </div>
+      </div>
+    </div>
+    <div class="gh-side">
+      <h4>About</h4>
+      <p>🏆 Beam Hackathon submission — agentic solar-farm feasibility studio<br><br>
+      🔗 <a href="#">huggingface.co/spaces/…</a></p>
+      <h4>Topics</h4>
+      <p>solar · agent · beam · cesium · fastapi · three.js</p>
+      <h4>Releases</h4>
+      <p>No releases</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== HUGGING FACE ===================== -->
+<div class="view">
+  <div class="hf-head"><span class="hf-logo">🤗</span>
+    <span class="hf-crumb"><b>reflection</b> / Beam-1.0-501B-A23B ·
+    Discussions · #5 — Show what you built with Beam</span></div>
+  <div class="hf-post md">
+    <div class="hf-meta">
+      <div class="hf-avatar">AF</div>
+      <div class="who"><b>Amandine Flachs</b><span>2 days ago</span></div>
+    </div>
+    <p>Built for the <b>Build with Beam</b> challenge. The problem it
+    tackles: first-pass site screening for utility-scale solar still takes
+    weeks of manual GIS work per site, redone every time a constraint
+    changes.</p>
+    <p><b>BEAM for BOM: draw a boundary on a satellite globe. Beam designs the
+    solar farm, estimates the energy, writes the report, lets you walk the
+    site in 3D, and answers questions while you watch it think. We also
+    measured how it thinks.</b></p>
+    <ul>
+      <li>Space (live demo): <code>[SPACE_URL]</code></li>
+      <li>Code (MIT): <code>[GITHUB_URL]</code></li>
+      <li>Demo video (~150 s, captioned): <code>[VIDEO_URL]</code></li>
+      <li>Eval tasks + results CSV: <code>[GITHUB_URL]/tree/main/backend/eval</code></li>
+    </ul>
+    <h2>Results</h2>
+    <p>11 tasks covering tool selection, pipeline scoping and grounding. Each
+    ran at three reasoning efforts, 2 runs per cell, against the live model:</p>
+    <table>
+      <tr><th>effort</th><th>tasks passed</th><th>avg reasoning tokens</th><th>avg completion tokens</th><th>avg latency</th></tr>
+      <tr><td>low</td><td>16/22</td><td>190</td><td>602</td><td>5.8 s</td></tr>
+      <tr><td>medium</td><td>16/22</td><td>449</td><td>919</td><td>7.2 s</td></tr>
+      <tr><td>high</td><td>15/22</td><td>748</td><td>1,279</td><td>9.1 s</td></tr>
+    </table>
+    <p>Two things fall out of this. Tool selection is already saturated at low
+    effort: Beam picks the right tool ~100% of the time at every level, so
+    paying for <code>high</code> costs 2.1× the output tokens and buys nothing
+    on correctness. And the failure mode is not choosing tools, it is scoping
+    them…</p>
+    <h2>What it is</h2>
+    <ul>
+      <li><b>Site screening</b>: boundary on Esri imagery; OSM auto-detects
+        buildings, water and woodland</li>
+      <li><b>Solar resource</b>: PVGIS yield estimate (hourly, cached),
+        performance ratio</li>
+      <li><b>Array layout</b>: fixed-tilt table packing with shading-derived
+        row pitch</li>
+      <li><b>Electrical + materials</b>: strings, inverters, cables,
+        transformer rules, full BOM</li>
+      <li><b>Report</b>: design report + exported proposal written by Beam,
+        grounded in the design JSON</li>
+      <li><b>3D preview</b>: real heightfield terrain, sun-slider exposure
+        study, walkable first-person mode</li>
+      <li><b>Ask Beam</b>: "reduce land use 20%" — it re-plans, re-packs and
+        re-prices the site live</li>
+    </ul>
+    <h2>How Beam is used</h2>
+    <p><code>POST /api/chat</code> is a true multi-turn tool-calling loop with
+    6 typed tools. <code>POST /api/proposal</code> has Beam write the proposal
+    narrative with every number grounded in the design JSON. The Reflection
+    API requires <code>reasoning_content</code> echoed back verbatim on every
+    assistant tool-call turn; we preserve it across turns, and every reply
+    exposes Beam's reasoning trace plus token and latency meta in the UI.</p>
+    <h2>How it was built</h2>
+    <p>Mirror (Reflection's agent) added MultiPolygon boundaries, the
+    <code>/api/proposal</code> surface and shading-derived row pitch. Session
+    notes are in <code>eval/mirror_session.md</code> and the commits are
+    verifiable in git.</p>
+    <h2>Call ledger</h2>
+    <p>All LLM calls route through one chokepoint and land in a JSONL ledger:
+    surface, effort, per-call tokens including reasoning, tool calls with
+    args, latency. Total spend is inspectable end to end.</p>
+  </div>
+</div>
+
+<script>
+  function show(i){
+    document.querySelectorAll('.view').forEach((v,j)=>v.classList.toggle('active',i===j));
+    document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  }
+</script>
+</body></html>
