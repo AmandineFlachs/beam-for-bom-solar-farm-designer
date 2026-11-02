@@ -236,10 +236,10 @@ Space secrets. Live demo: SPACE_URL
 ## Team
 
 - Amandine Flachs
-- Extended with Mirror, Reflection's agent. MultiPolygon boundaries,
-  the `/api/proposal` surface, and shading-derived row pitch were
-  written by Mirror running on Beam (session notes in
-  `eval/mirror_session.md`, commits verifiable in git).
+- Built with Mirror (Reflection's agent) and Devin (Cognition's
+  agent): Mirror wrote MultiPolygon boundaries, `/api/proposal` and
+  shading-derived row pitch (`eval/mirror_session.md`); agent commits
+  verifiable in git.
 
 ## License
 
