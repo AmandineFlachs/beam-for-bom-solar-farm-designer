@@ -192,7 +192,10 @@ export BEAM_API_BASE=... BEAM_API_KEY=... BEAM_MODEL=...
 
 Create a **Docker** Space and push this repo. `Dockerfile` builds the
 frontend and serves it from FastAPI on port 7860. Set `BEAM_API_*` as
-Space secrets. Live demo: SPACE_URL
+Space secrets. Our Space at
+[huggingface.co/spaces/AmandineFlachs/beam-for-bom](https://huggingface.co/spaces/AmandineFlachs/beam-for-bom)
+is a static showcase (demo video + eval diagrams) — the app itself runs
+locally or on any Docker host.
 
 ## API
 
