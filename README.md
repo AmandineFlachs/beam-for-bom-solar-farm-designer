@@ -104,30 +104,40 @@ compute and Beam decides. Concretely it handles:
 
 ## Evaluating Beam
 
-11 agentic tasks (`backend/eval/tasks.json`) cover tool selection,
-pipeline scoping and grounding, each run at three reasoning efforts, 2
-runs per cell, against the live model: 66 runs, results in
-`backend/eval/results.csv`:
+`backend/eval/tasks.json` holds 11 chat prompts, each with a rule-based
+grader that checks three things: did Beam call the right tool, did it
+re-run only the pipeline stages the change actually requires
+(`terrain → layout → electrical → yield → bom`), and are its numbers
+grounded in tool output. Example: "change the tilt to 25°" should call
+`run_stage` and re-run `layout, yield, bom`; `terrain` should stay
+skipped (the site didn't move) and so should `electrical` (the wiring
+didn't change).
 
-| effort | tasks passed | avg reasoning tokens | avg completion tokens | avg latency |
+Each task ran at three reasoning efforts, 2 runs per cell, against the
+live model: 66 runs total (`backend/eval/results.csv`).
+
+| effort | runs passed | avg reasoning tokens | avg completion tokens | avg latency |
 |---|---|---|---|---|
 | low    | 16/22 | 190 | 602   | 5.8 s |
 | medium | 16/22 | 449 | 919   | 7.2 s |
 | high   | 15/22 | 748 | 1,279 | 9.1 s |
 
-Tool selection is nearly perfect at every effort, and `high` costs
-~2.1× the completion tokens for no extra correctness. Low effort is
-already enough for this workload.
+The failures concentrate in one category. Tool selection is correct in
+nearly every run at every effort, so `high` buys ~2.1× the output
+tokens for no measured gain.
 
 ![Effort vs cost](docs/effort_cost.png)
 
-The observed failure mode is stage scoping: on narrow changes Beam
-re-runs the `electrical` stage every time (12/12). Wasteful, not wrong.
+The observed failure mode is scoping: on narrow edits like the tilt
+change above, Beam picks `run_stage` correctly but re-runs
+`electrical` anyway, in all 12 narrow-edit runs (2 tasks × 2 runs ×
+3 efforts).
 
 ![Stage scoping](docs/scoping_map.png)
 
 Re-run with `uv run python eval/run_eval.py --effort low medium high
---runs 3` (needs a live backend with `BEAM_API_*` set).
+--runs 3` (needs a live backend with `BEAM_API_*` set). Small-n caveat:
+2 runs per cell is directional, not statistical.
 
 ## Tech stack
 
