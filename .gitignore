@@ -31,5 +31,5 @@ openedit/
 # tooling + OS
 .DS_Store
 .agents/
-.devin/skills/
+.devin/
 skills-lock.json
