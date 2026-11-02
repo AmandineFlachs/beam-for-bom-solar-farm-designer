@@ -21,8 +21,8 @@ exports/
 # *.mp4 / *.webm are too large for GitHub; the final video lives on the
 # submission page and captures stay local.
 eval/video_assets/*.mp4
-eval/captures/*.webm
-eval/captures/*_raw/
+eval/captures/
+eval/submission_preview.html
 
 # local tooling
 openedit/
