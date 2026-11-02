@@ -16,7 +16,7 @@ study and a walkable first-person mode, and a conversational layer
 ("Ask Beam") lets you re-plan the site in plain language while you
 watch it reason.
 
-[![Video](docs/video-thumbnail.png)](VIDEO_URL)
+[![Video](docs/video-thumbnail.png)](https://youtu.be/lEAzKxl7fv4)
 
 ## Repository
 
