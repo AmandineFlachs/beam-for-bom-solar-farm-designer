@@ -84,23 +84,12 @@ SQLite project store
   (`backend/eval/ledger.jsonl`): surface, effort, per-call tokens
   including reasoning, tool calls with args, latency.
 
-### What Beam carries in this product
-
-Beam is the reasoning layer over a deterministic pipeline; the services
-compute and Beam decides. Concretely it handles:
-
-- **Intent → tool mapping**: "reduce land use 20%" becomes
-  `run_full_design(land_use_factor=0.8)`; "change tilt to 25°" becomes a
-  scoped `run_stage` call. In eval this selection is near-perfect (see
-  below).
-- **Scoping judgement**: deciding which pipeline stages a change
-  actually requires. This is where the eval finds its mistakes.
-- **Grounded narration**: the proposal text and every chat answer cite
-  only tool output; asked to "just guess" a number, Beam called a tool
-  instead in 5 of 6 runs.
-- **Effort scaling**: `reasoning_effort` low→max is exposed per reply,
-  and our eval shows `low` already saturates tool correctness, so the
-  demo runs cheap by default.
+The services compute and Beam decides: it maps intent to tool calls
+("reduce land use 20%" → `run_full_design(land_use_factor=0.8)`),
+decides which pipeline stages a change actually requires (the hard
+part; see eval below), and narrates answers grounded only in tool
+output. Asked to "just guess" a number, it called a tool instead in 5
+of 6 runs.
 
 ## Evaluating Beam
 
@@ -147,13 +136,10 @@ Re-run with `uv run python eval/run_eval.py --effort low medium high
   httpx, SQLite
 - **Agent**: OpenAI-compatible tool calling against `BEAM_API_BASE`
 
-## Prerequisites
-
-Python 3.11+ (we use `uv`), Node 18+. Developed on macOS. No API keys
-required for the offline scripted mode; a Reflection Beam endpoint is
-needed for live mode.
-
 ## Run demo
+
+Needs Python 3.11+ (`uv`) and Node 18+. No API keys required for the
+offline scripted mode; a Reflection Beam endpoint enables live mode.
 
 ```bash
 # backend
@@ -175,12 +161,8 @@ red no-panel areas; Heeling House across the pond remains outside the site.
 The 2.5 MWp target produces 248 tables / 5,952 modules for a 2.559 MWp
 array, estimated at ~2,364.5 MWh/yr via PVGIS.
 
-**60-second tour:** run the demo → globe fly-in → design pipeline →
-**Report** for capacity, yield and the BOM one-pager → **3D Preview**
-for the terrain scene, shared time-of-day control, first-person walk
-(WASD + mouse, sprint/jump, inspection labels, cable route, weather
-mast, gate) → **Ask Beam** e.g. "reduce land use by 20%". It re-runs
-the layout with a denser packing factor and updates the BOM.
+**Tour:** run the demo → **Report** → **3D Preview** (terrain scene,
+sun study, first-person walk) → **Ask Beam** "reduce land use by 20%".
 
 Optional real-Beam agent (see `backend/.env.example`):
 
@@ -188,44 +170,18 @@ Optional real-Beam agent (see `backend/.env.example`):
 export BEAM_API_BASE=... BEAM_API_KEY=... BEAM_MODEL=...
 ```
 
-## API
+## Data & limitations
 
-| Endpoint | Purpose |
-|---|---|
-| `POST /api/site` | Create site (boundary + exclusions GeoJSON) |
-| `POST /api/terrain` | Elevation grid, slope/aspect, suitability mask |
-| `POST /api/layout` | PV table layout |
-| `POST /api/electrical` | Strings, inverters, cables, transformer |
-| `POST /api/yield` | PVGIS energy estimate |
-| `POST /api/bom` | Bill of materials |
-| `POST /api/design` | Full workflow (main agent endpoint) |
-| `POST /api/chat` | Beam agent (tool-calling or scripted fallback) |
-| `POST /api/proposal` | Beam-written proposal narrative (template fallback) |
-| `POST /api/export` | GeoJSON + CSV BOM + Markdown proposal + JSON |
-| `POST /api/demo` | Load the East York Water Field demo site |
-| `GET /api/geocode` | Place search (Open-Meteo) |
+Data: Esri/Maxar imagery (non-commercial demo use), Mapterhorn DEM,
+Open-Meteo elevation + geocoding, OpenStreetMap exclusions, PVGIS 5.x
+yield via `pvlib.iotools`, SimReady GLB props by
+[codepawl/simready-glb](https://github.com/codepawl/simready-glb)
+(CC-BY-4.0). Elevation, OSM and PVGIS responses are cached.
 
-## Data sources
-
-- Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User
-  Community, for non-commercial demonstration use
-- Terrain (3D preview): Mapterhorn Terrarium DEM tiles
-- Elevation: Open-Meteo Elevation API (fallback: Open-Elevation), cached
-- Exclusions: OpenStreetMap (buildings, water, woodland, per-type buffers)
-- Yield: PVGIS 5.x via `pvlib.iotools` (hourly, monthly fallback, cached)
-- Geocoding: Open-Meteo Geocoding API
-- 3D props: gate/fence GLBs converted from NVIDIA SimReady assets by
-  [codepawl/simready-glb](https://github.com/codepawl/simready-glb),
-  licensed CC-BY-4.0
-
-## Limitations
-
-- Feasibility-grade only; slope limit 8°, no shading simulation, no
-  planning constraints, no geotechnical assessment
-- Cable routes are simplified right-angle estimates
-- Transformer/grid sizing is rule-based; **DNO confirmation always
-  required**
-- Elevation grid resolution ~30 m; small sites densify automatically
+Feasibility-grade only: slope limit 8°, no shading simulation, no
+planning constraints, simplified right-angle cable routes, rule-based
+transformer/grid sizing — **DNO confirmation always required**.
+Elevation grid ~30 m; small sites densify automatically.
 
 ## Team
 
