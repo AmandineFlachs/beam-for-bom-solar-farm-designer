@@ -4,18 +4,18 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   * { margin:0; box-sizing:border-box; }
-  body { width:1920px; height:1080px; background:#07090e; color:#f4f5f7;
+  body { width:1920px; height:800px; background:#07090e; color:#f4f5f7;
     font-family:'IBM Plex Sans',sans-serif; display:flex; flex-direction:column;
     justify-content:center; padding:0 160px; }
   .kick { font-family:'IBM Plex Mono',monospace; font-size:16px;
     letter-spacing:.3em; color:#ff951f; text-transform:uppercase;
     margin-bottom:18px; animation:fadein .16s both; }
   .req { font-size:46px; font-weight:500; letter-spacing:-.01em;
-    margin-bottom:66px; animation:fadein .16s .15s both; }
+    margin-bottom:46px; animation:fadein .16s .15s both; }
   .req code { font-family:'IBM Plex Mono',monospace; color:#edcd8c;
     background:#10141c; padding:6px 18px; border:1px solid #303139;
     border-radius:5px; font-size:34px; }
-  .rows { display:flex; flex-direction:column; gap:54px; }
+  .rows { display:flex; flex-direction:column; gap:40px; }
   .row { display:flex; align-items:center; gap:38px; }
   .tag { width:280px; text-align:right; font-family:'IBM Plex Mono',monospace;
     font-size:16px; color:#c9ced8; text-transform:uppercase;
@@ -33,7 +33,7 @@
   .should .stage:nth-child(5){animation-delay:.7s}.should .stage:nth-child(7){animation-delay:.85s}
   .should .stage:nth-child(9){animation-delay:1s}
   .did .stage { animation-delay:1.3s }
-  .verdict { margin-top:60px; font-size:27px; color:#c9ced8;
+  .verdict { margin-top:44px; font-size:27px; color:#c9ced8;
     animation:fadein .16s 1.9s both; }
   .verdict b { color:#edcd8c; font-weight:500; }
   @keyframes fadein { from { opacity:0; transform:translateY(10px) } to { opacity:1 } }

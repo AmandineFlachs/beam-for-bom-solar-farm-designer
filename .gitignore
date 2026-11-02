@@ -17,7 +17,16 @@ backend/.env
 exports/
 *.zip
 
-# eval artifacts are committed (submission evidence)
+# eval artifacts are committed (submission evidence), but not raw video:
+# *.mp4 / *.webm are too large for GitHub; the final video lives on the
+# submission page and captures stay local.
+eval/video_assets/*.mp4
+eval/captures/*.webm
+eval/captures/*_raw/
+
+# local tooling
+openedit/
+.venv/
 
 # tooling + OS
 .DS_Store

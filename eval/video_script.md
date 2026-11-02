@@ -22,56 +22,50 @@ eval/video_assets/. Captions burned.
 
 ## Narration (read to camera, plays under the bubble)
 
-**N1 (~10s):** "I gave Beam a satellite map and one job. Sixty seconds
-later it had drawn a solar farm on it: two hundred and forty-eight
-tables, two point six megawatts, and a bill of materials ready to
-order."
+**N1 (~10s):** "Let's give Beam a satellite map and one job: to plan a solar farm on it. Sixty seconds later you get two hundred and forty-eight tables positioned on your land, two point six megawatts of power expected to be generated, and a bill of materials ready to order."
 
 **N2 (~12s):** "Screening land for utility-scale solar still takes
 weeks. Desktop studies, map layers, layouts redone every time a
-constraint changes. This is BEAM for BOM, Solar Farm designer, built on Beam, a five
-hundred billion parameter model from Reflection AI."
+constraint changes. My name Is Amandine Flachs and I created BEAM for BOM, Solar Farm designer, built on Beam, a five hundred billion parameter model from Reflection AI."
 
 **N3a (~15s):** "You draw the boundary of a parcel on the globe. Beam
 pulls OpenStreetMap and finds the constraints itself: the pond, the
-woods, the farm buildings. They light up red, and the layout engine
+woods, the farm buildings, ect. They light up red, and the layout engine
 packs the solar panels around them automatically."
 
 **N3c (~15s):** "The 3D preview builds real terrain, with satellite
-imagery on top, and the water and trees where the map says they are.
-Slide the time of day and you watch the sun cross the site, shadows
-sweeping the tables from morning to evening. You can see the exposure
+imagery on top, and adds the water and the trees where the map says they are.
+Slide the time of day and you can watch the sun cross the site, shadows
+sweeping the solar panels from morning to evening. You can see the exposure
 hour by hour."
 
 **N3b (~18s):** "Then the report tells you what you're actually
-building: how much energy it makes a year, how well it performs, and
-exactly what to buy. The bill of materials goes line by line, from the
+building: how much energy it is expected to make per year, how well it would perform, and
+exactly what to buy to build it. The bill of materials goes line by line, from the
 panels and inverters down to the cables and the transformer. You can
-export the whole thing as a proposal."
+then export the whole thing as a proposal."
 
 
-**N3d (~18s):** "Anytime, you can talk to Beam, for example to
-reduce land use by twenty percent and you can watch it think: it picks
-the tools, runs the pipeline again, and repacks the site live." 
+**N3d (~18s):** "At anytime, you can also talk to Beam, for example say you want to
+reduce land use by twenty percent. And you can watch it think: it picks
+the tools, runs the pipeline again, and repacks the entire site live." 
 
 **N4 (~40s):** "The project has three layers. A React and Cesium globe for
 the working map. A Three.js scene on real elevation data for the
-preview. And a FastAPI pipeline does the engineering, from spotting
-constraints to pricing the parts. Beam sits on top in a true
-multi-turn tool-calling loop with six typed tools. It reads your
+preview. And a FastAPI pipeline that does the engineering, from spotting
+constraints to speccing the parts. Beam sits on top in a true
+multi-turn tool-calling loop with six structured tools. It reads your
 request, reasons about it, picks a tool and its arguments, gets the
-result back, and decides what to do next. You can see its reasoning in
-the chat, step by step." 
+results back, and decides what to do next. You can see its full reasoning in
+the chat." 
 
-**N4b (~18s):** "I also ran evals on Beam's different reasoning efforts.
-It showed nearly perfect tool selection
-across the sixty-six runs. Interestingly, the
+**N4b (~18s):** "I also used this project as an evironment to run evals on Beam's different reasoning efforts.
+It showed nearly perfect tool selection across the sixty-six runs. Interestingly, the
 highest effort costs twice the tokens for no extra correctness. So low
 effort is already enough, which makes this relatively cheap to run, as well."
 
-**N5 (~12s):** "So a feasibility study that used to take weeks happens
-while you watch. BEAM for BOM, Solar Farm designer, built on Beam, extended by Mirror.
-Links below."
+**N5 (~12s):** "So a feasibility study that used to take weeks now can happen
+while you watch. This is BEAM for BOM, Solar Farm designer, built on Beam, extended by Mirror, for the Hugging Face and Reflection AI competition."
 
 ## Captures
 
